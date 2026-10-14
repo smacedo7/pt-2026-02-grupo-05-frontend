@@ -10,22 +10,23 @@ export default function CadastroForm() {
             <h1 className="mb-8 text-center text-2xl font-bold uppercase">Crie sua conta</h1>
             <form className="flex flex-col gap-3">
                 <div>
-                    <input type="text" placeholder="Nome Completo"
+                    <input type="text" name= "name" placeholder="Nome Completo"
                         className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
                 </div>
 
                 <div>
-                    <input type="text" placeholder="Username"
+                    <input type="text" name="username" placeholder="Username"
                         className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
                 </div>
 
                 <div>
-                    <input type="email" placeholder="Email"
+                    <input type="email" name="email" placeholder="Email"
                         className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
                 </div>
 
                 <div className="relative">
                     <input type={mostrarSenha ? "text" : "password"}
+                        name="password"
                         placeholder="Senha"
                         className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
                     />
@@ -51,6 +52,7 @@ export default function CadastroForm() {
                 <div className="relative">
                     <input
                         type={mostrarConfirmar ? "text" : "password"}
+                        name="passwordConfirmation"
                         placeholder="Confirmar Senha"
                         className="w-full rounded-full bg-creme py-2 pl-5 pr-12 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
                     />
