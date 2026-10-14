@@ -6,29 +6,29 @@ export default function CadastroForm() {
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
     return (
-        <section className="w-full max-w-sm rounded-t-3xl bg-preto px-10 py-12 text-creme">
-            <h1 className="mb-8 text-center text-2xl font-bold uppercase">Crie sua conta</h1>
+        <section className="w-[45vw] shrink-0 rounded-t-[5vw] bg-preto px-[5vw] pb-10 pt-[6vh] text-creme">
+            <h1 className="mb-[5vh] text-center text-3xl font-bold uppercase">Crie sua conta</h1>
             <form className="flex flex-col gap-3">
                 <div>
                     <input type="text" name= "name" placeholder="Nome Completo"
-                        className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
+                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
                 </div>
 
                 <div>
                     <input type="text" name="username" placeholder="Username"
-                        className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
+                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
                 </div>
 
                 <div>
                     <input type="email" name="email" placeholder="Email"
-                        className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
+                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
                 </div>
 
                 <div className="relative">
                     <input type={mostrarSenha ? "text" : "password"}
                         name="password"
                         placeholder="Senha"
-                        className="w-full rounded-full bg-creme px-5 py-2 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
+                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
                     />
                     <button type="button" onClick={() => setMostrarSenha(!mostrarSenha)}
                         aria-label={mostrarSenha ? "Ocultar" : "Mostrar"}
@@ -54,7 +54,7 @@ export default function CadastroForm() {
                         type={mostrarConfirmar ? "text" : "password"}
                         name="passwordConfirmation"
                         placeholder="Confirmar Senha"
-                        className="w-full rounded-full bg-creme py-2 pl-5 pr-12 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
+                        className="w-full rounded-full bg-creme py-2.5 pl-5 pr-12 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
                     />
                     <button
                         type="button"
@@ -80,13 +80,13 @@ export default function CadastroForm() {
 
                 <div>
                     <button type="submit"
-                        className="mt-3 w-full cursor-pointer rounded-full bg-roxo py-2 font-bold text-creme hover:opacity-90">
-                        CRIAR CONTA
+                        className="mt-5 w-full cursor-pointer rounded-full bg-roxo py-3 font-bold text-creme hover:opacity-90">
+                        ENTRAR
                     </button>
                 </div>
             </form>
 
-            <p className="mt-6 text-sm">
+            <p className="mt-5 text-lg">
                 Já possui uma conta?{" "} <a href="/login" className="font-bold text-roxo">Login</a>
             </p>
         </section>
