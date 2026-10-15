@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-
+import Link from "next/link";
 export default function CadastroForm() {
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
     return (
-        <section className="w-[45vw] shrink-0 rounded-t-[5vw] bg-preto px-[5vw] pb-10 pt-[6vh] text-creme">
-            <h1 className="mb-[5vh] text-center text-3xl font-bold uppercase">Crie sua conta</h1>
+        <section className="w-full flex-1 rounded-t-3xl bg-preto px-6 pb-10 pt-8 md:w-[45vw] md:flex-none md:rounded-t-[5vw] md:px-[5vw] md:pt-[6vh] text-creme">
+            <h1 className="mb-[5vh] text-center text-2xl md:text-3xl font-bold uppercase">Crie sua conta</h1>
             <form className="flex flex-col gap-3">
+                
                 <div>
                     <input type="text" name= "name" placeholder="Nome Completo"
                         className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
