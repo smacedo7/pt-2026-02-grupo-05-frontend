@@ -9,30 +9,61 @@ export default function CadastroForm() {
         <section className="w-full flex-1 rounded-t-3xl bg-preto px-6 pb-10 pt-8 md:w-[45vw] md:flex-none md:rounded-t-[5vw] md:px-[5vw] md:pt-[6vh] text-creme">
             <h1 className="mb-[5vh] text-center text-2xl md:text-3xl font-bold uppercase">Crie sua conta</h1>
             <form className="flex flex-col gap-3">
-                
+
                 <div>
-                    <input type="text" name= "name" placeholder="Nome Completo"
-                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
+                    <label htmlFor="nome" className="sr-only">
+                        Nome completo
+                    </label>
+                    <input
+                        id="nome"
+                        type="text"
+                        name="name"
+                        placeholder="Nome Completo"
+                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
+                    />
                 </div>
 
                 <div>
-                    <input type="text" name="username" placeholder="Username"
-                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
+                    <label htmlFor="username" className="sr-only">
+                        Username
+                    </label>
+                    <input
+                        id="username"
+                        type="text"
+                        name="username"
+                        placeholder="Username"
+                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
+                    />
                 </div>
 
                 <div>
-                    <input type="email" name="email" placeholder="Email"
-                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo" />
+                    <label htmlFor="email" className="sr-only">
+                        Email
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        name="email"
+                        placeholder="Email"
+                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
+                    />
                 </div>
 
                 <div className="relative">
-                    <input type={mostrarSenha ? "text" : "password"}
+                    <label htmlFor="senha" className="sr-only">
+                        Senha
+                    </label>
+                    <input
+                        id="senha"
+                        type={mostrarSenha ? "text" : "password"}
                         name="password"
                         placeholder="Senha"
-                        className="w-full rounded-full bg-creme px-5 py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
+                        className="w-full rounded-full bg-creme py-2.5 pl-5 pr-12 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo"
                     />
-                    <button type="button" onClick={() => setMostrarSenha(!mostrarSenha)}
-                        aria-label={mostrarSenha ? "Ocultar" : "Mostrar"}
+                    <button
+                        type="button"
+                        onClick={() => setMostrarSenha(!mostrarSenha)}
+                        aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                         className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-preto/50"
                     >
                         <svg
@@ -50,8 +81,13 @@ export default function CadastroForm() {
                         </svg>
                     </button>
                 </div>
+
                 <div className="relative">
+                    <label htmlFor="confirmar-senha" className="sr-only">
+                        Confirmar senha
+                    </label>
                     <input
+                        id="confirmar-senha"
                         type={mostrarConfirmar ? "text" : "password"}
                         name="passwordConfirmation"
                         placeholder="Confirmar Senha"
@@ -60,7 +96,11 @@ export default function CadastroForm() {
                     <button
                         type="button"
                         onClick={() => setMostrarConfirmar(!mostrarConfirmar)}
-                        aria-label={mostrarConfirmar ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+                        aria-label={
+                            mostrarConfirmar
+                                ? "Ocultar confirmação de senha"
+                                : "Mostrar confirmação de senha"
+                        }
                         className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-preto/50"
                     >
                         <svg
