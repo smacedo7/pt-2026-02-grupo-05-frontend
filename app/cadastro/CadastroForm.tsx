@@ -53,7 +53,6 @@ export default function CadastroForm() {
             return;
         }
 
-        // Próximo passo: enviar os dados para a API.
     }
 
     return (
