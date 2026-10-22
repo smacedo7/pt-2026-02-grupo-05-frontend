@@ -1,4 +1,5 @@
-const URL_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import axios from "axios";
+import { api } from "@/lib/api";
 
 export type CamposCadastro = {
     name: string;
@@ -50,42 +51,40 @@ function errosDeValidacao(mensagens: string[]): Partial<Record<CampoCadastro, st
 }
 
 export async function criarUsuario(dados: CamposCadastro): Promise<ResultadoCadastro> {
-    let resposta: Response;
     try {
-        resposta = await fetch(`${URL_API}/users`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name: dados.name,
-                username: dados.username,
-                email: dados.email,
-                password: dados.password,
-                passwordConfirmation: dados.passwordConfirmation,
-            }),
+        await api.post("/users", {
+            name: dados.name,
+            username: dados.username,
+            email: dados.email,
+            password: dados.password,
+            passwordConfirmation: dados.passwordConfirmation,
         });
-    } catch {
-        return { tipo: "conexao" };
-    }
-
-    if (resposta.status === 201) {
         return { tipo: "criado" };
-    }
+    } catch (erro) {
+        if (!axios.isAxiosError(erro)) {
+            return { tipo: "erro" };
+        }
+        // Sem resposta do servidor: backend parado, rede caiu ou CORS bloqueou.
+        if (!erro.response) {
+            return { tipo: "conexao" };
+        }
 
-    if (resposta.status === 400) {
-        const corpo = await resposta.json().catch(() => null);
-        const mensagens: string[] = Array.isArray(corpo?.message) ? corpo.message : [];
-        return { tipo: "validacao", campos: errosDeValidacao(mensagens) };
-    }
+        const corpo = erro.response.data as { message?: unknown; fields?: unknown } | undefined;
 
-    if (resposta.status === 409) {
-        const corpo = await resposta.json().catch(() => null);
-        const campos = Array.isArray(corpo?.fields)
-            ? corpo.fields.filter((campo: unknown): campo is "email" | "username" =>
-                  campo === "email" || campo === "username",
-              )
-            : [];
-        return { tipo: "conflito", campos };
-    }
+        if (erro.response.status === 400) {
+            const mensagens = Array.isArray(corpo?.message) ? corpo.message : [];
+            return { tipo: "validacao", campos: errosDeValidacao(mensagens) };
+        }
 
-    return { tipo: "erro" };
+        if (erro.response.status === 409) {
+            const campos = Array.isArray(corpo?.fields)
+                ? corpo.fields.filter((campo: unknown): campo is "email" | "username" =>
+                      campo === "email" || campo === "username",
+                  )
+                : [];
+            return { tipo: "conflito", campos };
+        }
+
+        return { tipo: "erro" };
+    }
 }
