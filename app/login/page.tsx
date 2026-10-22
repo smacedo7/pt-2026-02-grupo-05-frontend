@@ -2,18 +2,64 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { entrar, type ResultadoLogin } from "./entrar";
+
+const MENSAGENS_ERRO: Record<Exclude<ResultadoLogin["tipo"], "autenticado">, string> = {
+  credenciais: "E-mail ou senha incorretos.",
+  validacao: "Revise os dados informados.",
+  conexao: "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+  erro: "Não foi possível entrar. Tente novamente.",
+};
 
 export default function LoginPage() {
+  const router = useRouter();
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [aviso, setAviso] = useState("");
+  const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  // O estado chega depois do próximo clique; a ref bloqueia envios duplicados já.
+  const envioEmAndamento = useRef(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (envioEmAndamento.current) {
+      return;
+    }
 
-    setAviso(
-      "O formulário está pronto. A conexão com o login ainda será implementada.",
-    );
+    const dados = new FormData(event.currentTarget);
+    const email = String(dados.get("email") ?? "").trim();
+    const senha = String(dados.get("password") ?? "");
+
+    if (!email || !senha) {
+      setErro("Informe seu e-mail e sua senha.");
+      return;
+    }
+
+    envioEmAndamento.current = true;
+    setEnviando(true);
+    setErro("");
+
+    const resultado = await entrar(email, senha);
+
+    if (resultado.tipo === "autenticado") {
+      try {
+        localStorage.setItem("accessToken", resultado.accessToken);
+      } catch {
+        setErro("Não foi possível salvar sua sessão neste navegador.");
+        envioEmAndamento.current = false;
+        setEnviando(false);
+        return;
+      }
+      // Fica bloqueado até a navegação, para não reenviar o login.
+      router.push("/");
+      return;
+    }
+
+    setErro(MENSAGENS_ERRO[resultado.tipo]);
+    envioEmAndamento.current = false;
+    setEnviando(false);
   }
 
   const estiloCampo =
@@ -129,11 +175,19 @@ export default function LoginPage() {
                 Esqueceu sua senha?
               </button>
 
+              {erro && (
+                <p role="alert" className="text-center text-sm text-red-400">
+                  {erro}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="cursor-pointer rounded-full bg-[#6d3cf7] px-5 py-3 font-bold transition-colors hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f6f8e2]"
+                disabled={enviando}
+                aria-busy={enviando}
+                className="cursor-pointer rounded-full bg-[#6d3cf7] px-5 py-3 font-bold transition-colors hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f6f8e2] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                ENTRAR
+                {enviando ? "ENTRANDO..." : "ENTRAR"}
               </button>
 
               <p
