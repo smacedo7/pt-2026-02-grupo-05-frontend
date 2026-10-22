@@ -148,7 +148,7 @@ export default function LoginPage() {
             <p className="mt-5 text-center text-sm">
               Não possui uma conta?{" "}
               <Link
-                href="/tela-cadastro"
+                href="/cadastro"
                 className="rounded font-semibold text-[#b79aff] underline underline-offset-4 hover:text-[#d0bdff] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#b79aff]"
               >
                 Cadastre-se
