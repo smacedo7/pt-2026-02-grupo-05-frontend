@@ -122,7 +122,7 @@ export default function CadastroForm() {
                 <div>
                     <button type="submit"
                         className="mt-5 w-full cursor-pointer rounded-full bg-roxo py-3 font-bold text-creme hover:opacity-90">
-                        ENTRAR
+                        CADASTRE-SE
                     </button>
                 </div>
             </form>

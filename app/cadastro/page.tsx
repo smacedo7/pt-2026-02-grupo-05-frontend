@@ -21,7 +21,7 @@ export default function TelaCadastro() {
                     />
                     <Image
                         src="/mascote.png"
-                        alt="Mascote da Stock.io, uma personagem de cabelo roxo fazendo sinal de paz"
+                        alt="Mascote da Stock.io"
                         width={500}
                         height={1130}
                         className="hidden h-auto md:block md:w-[min(35vw,45vh)]"
