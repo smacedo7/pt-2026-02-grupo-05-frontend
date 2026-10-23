@@ -1,4 +1,5 @@
-const URL_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import axios from "axios";
+import { api } from "@/lib/api";
 
 export type ResultadoLogin =
     | { tipo: "autenticado"; accessToken: string }
@@ -8,31 +9,29 @@ export type ResultadoLogin =
     | { tipo: "erro" };
 
 export async function entrar(email: string, senha: string): Promise<ResultadoLogin> {
-    let resposta: Response;
     try {
-        resposta = await fetch(`${URL_API}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password: senha }),
+        const { data } = await api.post<{ accessToken?: unknown }>("/auth/login", {
+            email,
+            password: senha,
         });
-    } catch {
-        return { tipo: "conexao" };
-    }
-
-    if (resposta.status === 401) {
-        return { tipo: "credenciais" };
-    }
-
-    if (resposta.status === 400) {
-        return { tipo: "validacao" };
-    }
-
-    if (resposta.ok) {
-        const corpo = await resposta.json().catch(() => null);
-        if (typeof corpo?.accessToken === "string") {
-            return { tipo: "autenticado", accessToken: corpo.accessToken };
+        if (typeof data?.accessToken === "string") {
+            return { tipo: "autenticado", accessToken: data.accessToken };
         }
+        return { tipo: "erro" };
+    } catch (erro) {
+        if (!axios.isAxiosError(erro)) {
+            return { tipo: "erro" };
+        }
+        // Sem resposta do servidor: backend parado, rede caiu ou CORS bloqueou.
+        if (!erro.response) {
+            return { tipo: "conexao" };
+        }
+        if (erro.response.status === 401) {
+            return { tipo: "credenciais" };
+        }
+        if (erro.response.status === 400) {
+            return { tipo: "validacao" };
+        }
+        return { tipo: "erro" };
     }
-
-    return { tipo: "erro" };
 }
