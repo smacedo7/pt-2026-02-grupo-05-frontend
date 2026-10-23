@@ -1,22 +1,32 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { criarUsuario, type CampoCadastro } from "./criar-usuario";
 
 const campoBase =
     "w-full rounded-full bg-creme py-2.5 text-preto placeholder:text-preto/50 outline-none focus:ring-2 focus:ring-roxo";
 
 export default function CadastroForm() {
+    const router = useRouter();
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
-    const [erros, setErros] = useState<Record<string, string>>({});
+    const [erros, setErros] = useState<Partial<Record<CampoCadastro, string>>>({});
+    const [erroGeral, setErroGeral] = useState<string | null>(null);
+    const [enviando, setEnviando] = useState(false);
+    // O estado chega depois do próximo clique; a ref bloqueia envios duplicados já.
+    const envioEmAndamento = useRef(false);
 
-    function classeCampo(campo: string) {
+    function classeCampo(campo: CampoCadastro) {
         return erros[campo] ? "ring-2 ring-red-500" : "";
     }
 
-    function aoEnviar(evento: FormEvent<HTMLFormElement>) {
+    async function aoEnviar(evento: FormEvent<HTMLFormElement>) {
         evento.preventDefault();
+        if (envioEmAndamento.current) {
+            return;
+        }
 
         const dados = new FormData(evento.currentTarget);
         const nome = String(dados.get("name") ?? "").trim();
@@ -25,13 +35,16 @@ export default function CadastroForm() {
         const senha = String(dados.get("password") ?? "");
         const confirmacao = String(dados.get("passwordConfirmation") ?? "");
 
-        const novosErros: Record<string, string> = {};
+        const novosErros: Partial<Record<CampoCadastro, string>> = {};
 
         if (!nome) {
             novosErros.name = "Informe seu nome completo.";
         }
         if (!username) {
             novosErros.username = "Informe um username.";
+        } else if (!/^[A-Za-z0-9._-]{3,50}$/.test(username)) {
+            novosErros.username =
+                "Use de 3 a 50 caracteres: letras, números, pontos, hífens ou underscores.";
         }
         if (!email) {
             novosErros.email = "Informe seu email.";
@@ -40,6 +53,8 @@ export default function CadastroForm() {
         }
         if (!senha) {
             novosErros.password = "Informe uma senha.";
+        } else if (senha.length < 8) {
+            novosErros.password = "A senha deve ter pelo menos oito caracteres.";
         }
         if (!confirmacao) {
             novosErros.passwordConfirmation = "Confirme sua senha.";
@@ -48,11 +63,56 @@ export default function CadastroForm() {
         }
 
         setErros(novosErros);
+        setErroGeral(null);
 
         if (Object.keys(novosErros).length > 0) {
             return;
         }
 
+        envioEmAndamento.current = true;
+        setEnviando(true);
+
+        const resultado = await criarUsuario({
+            name: nome,
+            username,
+            email,
+            password: senha,
+            passwordConfirmation: confirmacao,
+        });
+
+        if (resultado.tipo === "criado") {
+            // Fica bloqueado até a navegação, para não reenviar o cadastro.
+            router.push("/login");
+            return;
+        }
+
+        if (resultado.tipo === "validacao") {
+            setErros(resultado.campos);
+            if (Object.keys(resultado.campos).length === 0) {
+                setErroGeral("Revise os dados informados.");
+            }
+        } else if (resultado.tipo === "conflito") {
+            const camposEmUso: Partial<Record<CampoCadastro, string>> = {};
+            if (resultado.campos.includes("email")) {
+                camposEmUso.email = "Este email já está em uso.";
+            }
+            if (resultado.campos.includes("username")) {
+                camposEmUso.username = "Este username já está em uso.";
+            }
+            setErros(camposEmUso);
+            if (Object.keys(camposEmUso).length === 0) {
+                setErroGeral("Email ou username já cadastrado.");
+            }
+        } else if (resultado.tipo === "conexao") {
+            setErroGeral(
+                "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+            );
+        } else {
+            setErroGeral("Não foi possível concluir o cadastro. Tente novamente.");
+        }
+
+        envioEmAndamento.current = false;
+        setEnviando(false);
     }
 
     return (
@@ -221,11 +281,19 @@ export default function CadastroForm() {
                     )}
                 </div>
 
+                {erroGeral && (
+                    <p role="alert" className="mt-3 px-5 text-center text-sm text-red-400">
+                        {erroGeral}
+                    </p>
+                )}
+
                 <button
                     type="submit"
-                    className="mt-5 w-full cursor-pointer rounded-full bg-roxo py-3 font-bold text-creme hover:opacity-90"
+                    disabled={enviando}
+                    aria-busy={enviando}
+                    className="mt-5 w-full cursor-pointer rounded-full bg-roxo py-3 font-bold text-creme hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    CADASTRAR
+                    {enviando ? "ENVIANDO..." : "CADASTRAR"}
                 </button>
             </form>
 
