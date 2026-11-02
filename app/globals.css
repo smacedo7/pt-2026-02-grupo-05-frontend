@@ -13,6 +13,7 @@
   --color-creme: #f6f8e2;
   --color-preto: #171a17;
   --color-roxo: #6d3cf7;
+  --color-limao: #c6e600;
 }
 
 @media (prefers-color-scheme: dark) {
