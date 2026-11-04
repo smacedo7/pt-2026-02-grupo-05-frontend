@@ -52,15 +52,18 @@ const mockData: Record<string, Produto[]> = {
 
 //para teste
 const ProductCard = ({ produto }: { produto: Produto }) => {
-  
 
   if (produto.isPlaceholder) {
     return (
-      <div className="bg-white/50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col justify-between h-[260px]">
-        <div className="bg-gray-100/50 aspect-square rounded-xl mb-4 flex items-center justify-center">
+      <div
+        role="status"
+        aria-label="Carregando produto"
+        className="bg-white/50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col justify-between h-[260px]"
+      >
+        <div aria-hidden="true" className="bg-gray-100/50 aspect-square rounded-xl mb-4 flex items-center justify-center">
           <span className="text-gray-300 text-sm font-medium">Espaço vazio</span>
         </div>
-        <div className="flex flex-col gap-2 px-1 mt-auto">
+        <div aria-hidden="true" className="flex flex-col gap-2 px-1 mt-auto">
           <div className="h-3 bg-gray-100 rounded w-3/4"></div>
           <div className="h-3 bg-gray-100 rounded w-1/2"></div>
           <div className="h-2 bg-gray-100 rounded w-1/4 mt-2"></div>
@@ -72,28 +75,41 @@ const ProductCard = ({ produto }: { produto: Produto }) => {
 //para o exemplo da farmácia e mercado
   const badgeColor = produto.empresaLogo === 'CJR' ? 'bg-[#004b6e]' : produto.empresaLogo === 'NATU' ? 'bg-[#e04a6e]' : 'bg-gray-200';
 
+  const nomeAcessivel = [
+    produto.nome || 'Produto sem nome',
+    produto.preco ? `R$${produto.preco} por ${produto.unidade || 'unidade'}` : 'Preço não disponível',
+    produto.disponivel ? 'Disponível' : 'Indisponível',
+  ].join(', ');
+
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-pointer group relative flex flex-col justify-between h-[260px]">
-      
+    <button
+      type="button"
+      aria-label={nomeAcessivel}
+      className="text-left w-full bg-white rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-pointer group relative flex flex-col justify-between h-[260px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+    >
       {produto.empresaLogo && (
-        <div className={`absolute top-4 right-4 w-10 h-10 ${badgeColor} rounded-full z-10 flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shadow-sm overflow-hidden`}>
-          {produto.empresaLogo}
+        <div
+          role="img"
+          aria-label={`Loja ${produto.empresaLogo}`}
+          className={`absolute top-4 right-4 w-10 h-10 ${badgeColor} rounded-full z-10 flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shadow-sm overflow-hidden`}
+        >
+          <span aria-hidden="true">{produto.empresaLogo}</span>
         </div>
       )}
 
-      <div className="bg-[#f8f9fa] aspect-square rounded-xl mb-4 overflow-hidden relative flex items-center justify-center">
+      <div aria-hidden="true" className="bg-[#f8f9fa] aspect-square rounded-xl mb-4 overflow-hidden relative flex items-center justify-center">
         {produto.imagemUrl ? (
-          <Image src={produto.imagemUrl} alt={produto.nome} fill className="object-contain p-2" />
+          <Image src={produto.imagemUrl} alt="" fill className="object-contain p-2" />
         ) : (
           <span className="text-gray-300 text-sm">Sem Imagem</span>
         )}
       </div>
-      
-      <div className="flex flex-col gap-1 px-1 mt-auto">
+
+      <div aria-hidden="true" className="flex flex-col gap-1 px-1 mt-auto">
         <span className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[20px]">
           {produto.nome || 'Nome do Produto'}
         </span>
-        
+
         <div className="flex items-baseline gap-1 mt-1 min-h-[20px]">
           <span className="text-sm font-bold text-black">
             {produto.preco ? `R$${produto.preco}` : 'R$ --,--'}
@@ -102,12 +118,12 @@ const ProductCard = ({ produto }: { produto: Produto }) => {
             {produto.unidade ? `/${produto.unidade}` : '/--'}
           </span>
         </div>
-        
+
         <span className={`text-[10px] font-bold uppercase mt-1 tracking-wider ${produto.disponivel ? 'text-[#a4cc15]' : 'text-[#e04a6e]'}`}>
           {produto.disponivel ? 'Disponível' : 'Indisponível'}
         </span>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -115,6 +131,7 @@ const ProductCard = ({ produto }: { produto: Produto }) => {
 export default function Home() {
   const categoriasRef = useRef<HTMLDivElement>(null);
   const scrollInterval = useRef<NodeJS.Timeout | null>(null);
+  const buscaRef = useRef<HTMLInputElement>(null);
 
   const startScroll = (direcao: 'esquerda' | 'direita') => {
     if (scrollInterval.current) return;
@@ -133,24 +150,33 @@ export default function Home() {
     }
   };
 
+  const scrollStep = (direcao: 'esquerda' | 'direita') => {
+    const passo = direcao === 'esquerda' ? -220 : 220;
+    categoriasRef.current?.scrollBy({ left: passo, behavior: 'smooth' });
+  };
+
+  const focarBusca = () => {
+    buscaRef.current?.focus();
+  };
+
   return (
     <main className="min-h-screen flex flex-col font-sans bg-[#fcf9f2] overflow-x-hidden">
 
       {/* espaço que dps vai virar a navbar */}
       <header className="bg-[#0b0b0b] relative w-full pt-28 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative h-[320px] md:h-[370px]">
-          
-          <div className="absolute left-10 md:left-22 top-[37%] -translate-y-1/2 z-20">
-            <h2 className="text-[45px] md:text-[55px] font-sans font-bold text-white leading-[1] tracking-normal flex flex-col">
-              <span className="whitespace-nowrap">Do CAOS à organização,</span>
-              <span className="whitespace-nowrap md:ml-20 lg:ml-[148px]">em alguns cliques</span>
-            </h2>
+
+          <div className="absolute left-6 md:left-22 top-[37%] -translate-y-1/2 z-20">
+            <h1 className="text-3xl md:text-[55px] font-sans font-bold text-white leading-[1] tracking-normal flex flex-col">
+              <span className="md:whitespace-nowrap">Do CAOS à organização,</span>
+              <span className="md:whitespace-nowrap md:ml-20 lg:ml-[148px]">em alguns cliques</span>
+            </h1>
           </div>
 
-          <div className="absolute right-5 -top-11 md:-top-11 w-[500px] md:w-[600px] h-[750px] md:h-[800px] z-0 pointer-events-none">
+          <div aria-hidden="true" className="hidden md:block absolute right-5 -top-11 md:-top-11 w-[500px] md:w-[600px] h-[750px] md:h-[800px] z-0 pointer-events-none">
             <Image
               src="/mascote-home.png"
-              alt="Mascote Stock.io"
+              alt=""
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
               className="object-contain object-top"
@@ -161,55 +187,102 @@ export default function Home() {
       </header>
 
       {/* conteudo principal*/}
-      <section className="relative z-20 bg-[#fcf9f2] flex-1 pb-20 pt-8">
+      <section aria-label="Conteúdo principal" className="relative z-20 bg-[#fcf9f2] flex-1 pb-20 pt-8">
         <div className="max-w-7xl mx-auto px-6">
 
           {/* Barra de Busca */}
-          <div className="flex justify-end mb-8">
-            <div className="bg-white rounded-full flex items-center px-5 py-3 w-full max-w-[500px] shadow-sm border border-gray-100">
+          <form
+            role="search"
+            aria-label="Buscar produtos"
+            onSubmit={(e) => {
+              e.preventDefault();
+              focarBusca();
+            }}
+            className="flex justify-end mb-8"
+          >
+            <div className="bg-white rounded-full flex items-center px-5 py-3 w-full max-w-[500px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#6a38ff]">
+              <label htmlFor="busca" className="sr-only">
+                Buscar produtos
+              </label>
               <input
+                id="busca"
+                ref={buscaRef}
                 type="text"
                 placeholder="Procurar por..."
-                className="flex-1 outline-none text-sm text-[#6a38ff]/40 placeholder:text-[#6a38ff]/40 bg-transparent"
+                autoComplete="off"
+                className="flex-1 outline-none text-sm text-[#6a38ff]/60 placeholder:text-[#6a38ff]/60 bg-transparent"
               />
-              <svg className="text-[#6a38ff]/40 w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <button
+                type="submit"
+                aria-label="Buscar"
+                className="shrink-0 cursor-pointer text-[#6a38ff]/60 transition-colors hover:text-[#6a38ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded-full"
+              >
+                <svg aria-hidden="true" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </button>
             </div>
-          </div>
+          </form>
 
           {/* Categoria */}
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-3xl font-sans text-black">Categoria</h3>
-            
-            <div className="flex gap-2">
-              <button 
-                onMouseDown={() => startScroll('esquerda')} onMouseUp={stopScroll} onMouseLeave={stopScroll} onTouchStart={() => startScroll('esquerda')} onTouchEnd={stopScroll}
-                className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 active:scale-95 transition-all border border-gray-100 text-[#6a38ff] select-none"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-              </button>
-              <button 
-                onMouseDown={() => startScroll('direita')} onMouseUp={stopScroll} onMouseLeave={stopScroll} onTouchStart={() => startScroll('direita')} onTouchEnd={stopScroll}
-                className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 active:scale-95 transition-all border border-gray-100 text-[#6a38ff] select-none"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-              </button>
-            </div>
-          </div>
+          <section aria-labelledby="titulo-categorias">
+            <div className="flex justify-between items-center mb-6">
+              <h2 id="titulo-categorias" className="text-3xl font-sans text-black">Categoria</h2>
 
-          <div 
-            ref={categoriasRef}
-            className="flex gap-10 lg:gap-14 overflow-x-auto pb-6 mb-10 pr-6 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
-          >
-            {categorias.map((cat) => (
-              <button key={cat.nome} className="flex items-center justify-center bg-white rounded-3xl w-[110px] h-[110px] shrink-0 shadow-sm hover:shadow-md transition-all cursor-pointer p-3">
-                <Image src={cat.imagem} alt={cat.nome} width={70} height={70} className="object-contain" />
-              </button>
-            ))}
-          </div>
+              <div className="hidden gap-2 md:flex">
+                <button
+                  type="button"
+                  onClick={() => scrollStep('esquerda')}
+                  onMouseDown={() => startScroll('esquerda')}
+                  onMouseUp={stopScroll}
+                  onMouseLeave={stopScroll}
+                  onTouchStart={() => startScroll('esquerda')}
+                  onTouchEnd={stopScroll}
+                  aria-label="Ver categorias anteriores"
+                  aria-controls="lista-categorias"
+                  className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 active:scale-95 transition-all border border-gray-100 text-[#6a38ff] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollStep('direita')}
+                  onMouseDown={() => startScroll('direita')}
+                  onMouseUp={stopScroll}
+                  onMouseLeave={stopScroll}
+                  onTouchStart={() => startScroll('direita')}
+                  onTouchEnd={stopScroll}
+                  aria-label="Ver próximas categorias"
+                  aria-controls="lista-categorias"
+                  className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 active:scale-95 transition-all border border-gray-100 text-[#6a38ff] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="lista-categorias"
+              ref={categoriasRef}
+              role="region"
+              aria-label="Categorias de produtos"
+              tabIndex={0}
+              className="flex gap-10 lg:gap-14 overflow-x-auto pb-6 mb-10 pr-6 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded-lg"
+            >
+              {categorias.map((cat) => (
+                <button
+                  key={cat.nome}
+                  type="button"
+                  aria-label={`Ir para categoria ${cat.nome}`}
+                  className="flex items-center justify-center bg-white rounded-3xl w-[110px] h-[110px] shrink-0 shadow-sm hover:shadow-md transition-all cursor-pointer p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+                >
+                  <Image src={cat.imagem} alt="" width={70} height={70} className="object-contain" aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          </section>
 
           {/* parte produtos*/}
-          <div className="flex flex-col gap-16 mt-10">
-            
+          <section aria-label="Produtos por categoria" className="flex flex-col gap-16 mt-10">
+
             {categorias.map((cat) => {
               const categoriaKey = cat.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') as keyof typeof mockData;
               const produtosReais = mockData[categoriaKey] || [];
@@ -221,7 +294,7 @@ export default function Home() {
                 produtosExibidos = Array(3).fill(null).map((_, index) => ({
                   id: `skeleton-${categoriaKey}-${index}`,
                   nome: '', preco: '', unidade: '', disponivel: true, imagemUrl: '', empresaLogo: '',
-                  isPlaceholder: true 
+                  isPlaceholder: true
                 }));
               }
 
@@ -229,25 +302,32 @@ export default function Home() {
                 <div key={cat.nome}>
                   {/* Título da Categoria */}
                   <div className="flex justify-between items-end mb-6">
-                    <h3 className="text-2xl font-bold text-black">
-                      Produtos <span className="text-sm font-normal text-black lowercase">em</span> <span className="text-sm text-[#6a38ff] font-normal">{cat.nome}</span>
-                    </h3>
-                    <button className="text-sm text-[#6a38ff] font-semibold hover:underline">
+                    <h2 className="text-2xl font-bold text-black">
+                      Produtos <span className="text-sm font-normal text-black lowercase">em</span>{' '}
+                      <span className="text-sm text-[#6a38ff] font-normal">{cat.nome}</span>
+                    </h2>
+                    <button
+                      type="button"
+                      aria-label={`Ver mais produtos em ${cat.nome}`}
+                      className="text-sm text-[#6a38ff] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded"
+                    >
                       ver mais
                     </button>
                   </div>
 
                   {/* Grid de Produtos */}
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {produtosExibidos.map((prod) => (
-                      <ProductCard key={prod.id} produto={prod} />
+                    {produtosExibidos.map((prod, index) => (
+                      <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
+                        <ProductCard produto={prod} />
+                      </div>
                     ))}
                   </div>
                 </div>
               );
             })}
 
-          </div>
+          </section>
 
         </div>
       </section>
