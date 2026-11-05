@@ -1,20 +1,9 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-
-//vai ser alterado para ficar identico ao DTO
-interface Produto {
-  id: string | number;
-  nome: string;
-  preco: string;
-  unidade: string;
-  disponivel: boolean;
-  imagemUrl: string;
-  empresaLogo: string;
-  isPlaceholder?: boolean;
-}
+import { listarProdutos, type Produto } from './listarProdutos';
 
 const categorias = [
   { nome: 'Mercado', imagem: '/imagens/categorias/mercado.png' },
@@ -31,59 +20,46 @@ const categorias = [
 const slugify = (nome: string) =>
   nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-//placeholder pré integração com o BACK (vai ser substituido)
-const mockData: Record<string, Produto[]> = {
-  mercado: [
-    { id: 1, nome: 'Brownie Meio A.', preco: '4,70', unidade: 'kg', disponivel: true, imagemUrl: '', empresaLogo: 'CJR' },
-    { id: 2, nome: 'Brownie Trad.', preco: '3,80', unidade: 'kg', disponivel: false, imagemUrl: '', empresaLogo: 'CJR' },
-    { id: 3, nome: 'Nozes', preco: '29,99', unidade: 'kg', disponivel: true, imagemUrl: '', empresaLogo: 'G5' },
-    { id: 4, nome: 'Banana', preco: '3,99', unidade: 'kg', disponivel: true, imagemUrl: '', empresaLogo: 'NATU' },
-    { id: 5, nome: 'Limão Siciliano', preco: '17,99', unidade: 'kg', disponivel: false, imagemUrl: '', empresaLogo: 'NATU' },
-  ],
-  farmacia: [
-    { id: 6, nome: '', preco: '', unidade: '', disponivel: true, imagemUrl: '', empresaLogo: '' },
-    { id: 7, nome: '', preco: '', unidade: '', disponivel: false, imagemUrl: '', empresaLogo: '' },
-    { id: 8, nome: '', preco: '', unidade: '', disponivel: false, imagemUrl: '', empresaLogo: '' },
-    { id: 9, nome: '', preco: '', unidade: '', disponivel: true, imagemUrl: '', empresaLogo: '' },
-    { id: 10, nome: '', preco: '', unidade: '', disponivel: true, imagemUrl: '', empresaLogo: '' },
-  ],
-  beleza: [],
-  moda: [],
-  eletronicos: [],
-  jogos: [],
-  brinquedos: [],
-  casa: [],
-};
+type EstadoCategoria =
+  | { status: 'carregando' }
+  | { status: 'ok'; produtos: Produto[] }
+  | { status: 'erro'; mensagem: string };
 
-//para teste
+const MENSAGEM_CONEXAO =
+  'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
+const MENSAGEM_ERRO = 'Não foi possível carregar os produtos.';
+
+const ProductSkeleton = () => (
+  <div
+    role="status"
+    aria-label="Carregando produto"
+    className="bg-white/50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col justify-between h-[260px]"
+  >
+    <div aria-hidden="true" className="bg-gray-100/50 aspect-square rounded-xl mb-4 flex items-center justify-center" />
+    <div aria-hidden="true" className="flex flex-col gap-2 px-1 mt-auto">
+      <div className="h-3 bg-gray-100 rounded w-3/4"></div>
+      <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+      <div className="h-2 bg-gray-100 rounded w-1/4 mt-2"></div>
+    </div>
+  </div>
+);
+
 const ProductCard = ({ produto }: { produto: Produto }) => {
+  //para o exemplo da farmácia e mercado
+  const badgeColor = produto.companyLogo === 'CJR' ? 'bg-[#004b6e]' : produto.companyLogo === 'NATU' ? 'bg-[#e04a6e]' : 'bg-gray-200';
 
-  if (produto.isPlaceholder) {
-    return (
-      <div
-        role="status"
-        aria-label="Carregando produto"
-        className="bg-white/50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col justify-between h-[260px]"
-      >
-        <div aria-hidden="true" className="bg-gray-100/50 aspect-square rounded-xl mb-4 flex items-center justify-center">
-          <span className="text-gray-300 text-sm font-medium">Espaço vazio</span>
-        </div>
-        <div aria-hidden="true" className="flex flex-col gap-2 px-1 mt-auto">
-          <div className="h-3 bg-gray-100 rounded w-3/4"></div>
-          <div className="h-3 bg-gray-100 rounded w-1/2"></div>
-          <div className="h-2 bg-gray-100 rounded w-1/4 mt-2"></div>
-        </div>
-      </div>
-    );
-  }
-
-//para o exemplo da farmácia e mercado
-  const badgeColor = produto.empresaLogo === 'CJR' ? 'bg-[#004b6e]' : produto.empresaLogo === 'NATU' ? 'bg-[#e04a6e]' : 'bg-gray-200';
+  const precoNumerico = Number(produto.price);
+  const precoFormatado = Number.isFinite(precoNumerico)
+    ? precoNumerico.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : '--,--';
 
   const nomeAcessivel = [
-    produto.nome || 'Produto sem nome',
-    produto.preco ? `R$${produto.preco} por ${produto.unidade || 'unidade'}` : 'Preço não disponível',
-    produto.disponivel ? 'Disponível' : 'Indisponível',
+    produto.name || 'Produto sem nome',
+    `R$${precoFormatado} por ${produto.unit || 'unidade'}`,
+    produto.available ? 'Disponível' : 'Indisponível',
   ].join(', ');
 
   return (
@@ -92,19 +68,19 @@ const ProductCard = ({ produto }: { produto: Produto }) => {
       aria-label={nomeAcessivel}
       className="text-left w-full bg-white rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-pointer group relative flex flex-col justify-between h-[260px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
     >
-      {produto.empresaLogo && (
+      {produto.companyLogo && (
         <div
           role="img"
-          aria-label={`Loja ${produto.empresaLogo}`}
+          aria-label={`Loja ${produto.companyLogo}`}
           className={`absolute top-4 right-4 w-10 h-10 ${badgeColor} rounded-full z-10 flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shadow-sm overflow-hidden`}
         >
-          <span aria-hidden="true">{produto.empresaLogo}</span>
+          <span aria-hidden="true">{produto.companyLogo}</span>
         </div>
       )}
 
       <div aria-hidden="true" className="bg-[#f8f9fa] aspect-square rounded-xl mb-4 overflow-hidden relative flex items-center justify-center">
-        {produto.imagemUrl ? (
-          <Image src={produto.imagemUrl} alt="" fill className="object-contain p-2" />
+        {produto.imageUrl ? (
+          <Image src={produto.imageUrl} alt="" fill className="object-contain p-2" />
         ) : (
           <span className="text-gray-300 text-sm">Sem Imagem</span>
         )}
@@ -112,31 +88,60 @@ const ProductCard = ({ produto }: { produto: Produto }) => {
 
       <div aria-hidden="true" className="flex flex-col gap-1 px-1 mt-auto">
         <span className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[20px]">
-          {produto.nome || 'Nome do Produto'}
+          {produto.name || 'Nome do Produto'}
         </span>
 
         <div className="flex items-baseline gap-1 mt-1 min-h-[20px]">
-          <span className="text-sm font-bold text-black">
-            {produto.preco ? `R$${produto.preco}` : 'R$ --,--'}
-          </span>
-          <span className="text-xs text-gray-400">
-            {produto.unidade ? `/${produto.unidade}` : '/--'}
-          </span>
+          <span className="text-sm font-bold text-black">R${precoFormatado}</span>
+          <span className="text-xs text-gray-400">/{produto.unit || '--'}</span>
         </div>
 
-        <span className={`text-[10px] font-bold uppercase mt-1 tracking-wider ${produto.disponivel ? 'text-[#a4cc15]' : 'text-[#e04a6e]'}`}>
-          {produto.disponivel ? 'Disponível' : 'Indisponível'}
+        <span className={`text-[10px] font-bold uppercase mt-1 tracking-wider ${produto.available ? 'text-[#a4cc15]' : 'text-[#e04a6e]'}`}>
+          {produto.available ? 'Disponível' : 'Indisponível'}
         </span>
       </div>
     </button>
   );
 };
 
-
 export default function Home() {
   const categoriasRef = useRef<HTMLDivElement>(null);
   const scrollInterval = useRef<NodeJS.Timeout | null>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
+  const [estados, setEstados] = useState<Record<string, EstadoCategoria>>(
+    () =>
+      Object.fromEntries(
+        categorias.map((cat) => [
+          slugify(cat.nome),
+          { status: 'carregando' } as EstadoCategoria,
+        ]),
+      ),
+  );
+
+  useEffect(() => {
+    let cancelado = false;
+
+    categorias.forEach(async (cat) => {
+      const slug = slugify(cat.nome);
+      const resultado = await listarProdutos(slug);
+      if (cancelado) return;
+      setEstados((prev) => ({
+        ...prev,
+        [slug]:
+          resultado.tipo === 'ok'
+            ? { status: 'ok', produtos: resultado.produtos }
+            : {
+                status: 'erro',
+                mensagem:
+                  resultado.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO,
+              },
+      }));
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   const startScroll = (direcao: 'esquerda' | 'direita') => {
     if (scrollInterval.current) return;
@@ -289,19 +294,8 @@ export default function Home() {
           <section aria-label="Produtos por categoria" className="flex flex-col gap-16 mt-10">
 
             {categorias.map((cat) => {
-              const categoriaKey = slugify(cat.nome) as keyof typeof mockData;
-              const produtosReais = mockData[categoriaKey] || [];
-
-              let produtosExibidos: Produto[] = produtosReais.slice(0, 5);
-
-              // pra gerar os placeholders de exemplos nas categorias vazias
-              if (produtosExibidos.length === 0) {
-                produtosExibidos = Array(3).fill(null).map((_, index) => ({
-                  id: `skeleton-${categoriaKey}-${index}`,
-                  nome: '', preco: '', unidade: '', disponivel: true, imagemUrl: '', empresaLogo: '',
-                  isPlaceholder: true
-                }));
-              }
+              const categoriaKey = slugify(cat.nome);
+              const estado = estados[categoriaKey];
 
               return (
                 <div key={cat.nome}>
@@ -312,7 +306,7 @@ export default function Home() {
                       <span className="text-sm text-[#6a38ff] font-normal">{cat.nome}</span>
                     </h2>
                     <Link
-                      href={`/categorias/${slugify(cat.nome)}`}
+                      href={`/categorias/${categoriaKey}`}
                       aria-label={`Ver mais produtos em ${cat.nome}`}
                       className="text-sm text-[#6a38ff] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded"
                     >
@@ -322,11 +316,34 @@ export default function Home() {
 
                   {/* Grid de Produtos */}
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {produtosExibidos.map((prod, index) => (
-                      <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
-                        <ProductCard produto={prod} />
-                      </div>
-                    ))}
+                    {estado?.status === 'carregando' &&
+                      Array.from({ length: 5 }).map((_, index) => (
+                        <div
+                          key={`skeleton-${categoriaKey}-${index}`}
+                          className={index >= 4 ? 'hidden md:block' : ''}
+                        >
+                          <ProductSkeleton />
+                        </div>
+                      ))}
+
+                    {estado?.status === 'erro' && (
+                      <p role="alert" className="col-span-full text-center text-sm text-red-500">
+                        {estado.mensagem}
+                      </p>
+                    )}
+
+                    {estado?.status === 'ok' && estado.produtos.length === 0 && (
+                      <p className="col-span-full text-center text-sm text-gray-500">
+                        Nenhum produto disponível.
+                      </p>
+                    )}
+
+                    {estado?.status === 'ok' &&
+                      estado.produtos.slice(0, 5).map((prod, index) => (
+                        <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
+                          <ProductCard produto={prod} />
+                        </div>
+                      ))}
                   </div>
                 </div>
               );
