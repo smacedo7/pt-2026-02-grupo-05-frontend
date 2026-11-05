@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 //vai ser alterado para ficar identico ao DTO
 interface Produto {
@@ -16,15 +17,19 @@ interface Produto {
 }
 
 const categorias = [
-  { nome: 'Mercado', imagem: '/categorias/mercado.png' },
-  { nome: 'Farmácia', imagem: '/categorias/farmacia.png' },
-  { nome: 'Beleza', imagem: '/categorias/beleza.png' },
-  { nome: 'Moda', imagem: '/categorias/moda.png' },
-  { nome: 'Eletrônicos', imagem: '/categorias/eletronicos.png' },
-  { nome: 'Jogos', imagem: '/categorias/jogos.png' },
-  { nome: 'Brinquedos', imagem: '/categorias/brinquedos.png' },
-  { nome: 'Casa', imagem: '/categorias/casa.png' },
+  { nome: 'Mercado', imagem: '/imagens/categorias/mercado.png' },
+  { nome: 'Farmácia', imagem: '/imagens/categorias/farmacia.png' },
+  { nome: 'Beleza', imagem: '/imagens/categorias/beleza.png' },
+  { nome: 'Moda', imagem: '/imagens/categorias/moda.png' },
+  { nome: 'Eletrônicos', imagem: '/imagens/categorias/eletronicos.png' },
+  { nome: 'Jogos', imagem: '/imagens/categorias/jogos.png' },
+  { nome: 'Brinquedos', imagem: '/imagens/categorias/brinquedos.png' },
+  { nome: 'Casa', imagem: '/imagens/categorias/casa.png' },
 ];
+
+// Gera o slug da categoria: 'Farmácia' → 'farmacia', 'Eletrônicos' → 'eletronicos'
+const slugify = (nome: string) =>
+  nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 //placeholder pré integração com o BACK (vai ser substituido)
 const mockData: Record<string, Produto[]> = {
@@ -268,14 +273,14 @@ export default function Home() {
               className="flex gap-10 lg:gap-14 overflow-x-auto pb-6 mb-10 pr-6 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded-lg"
             >
               {categorias.map((cat) => (
-                <button
+                <Link
                   key={cat.nome}
-                  type="button"
+                  href={`/categorias/${slugify(cat.nome)}`}
                   aria-label={`Ir para categoria ${cat.nome}`}
                   className="flex items-center justify-center bg-white rounded-3xl w-[110px] h-[110px] shrink-0 shadow-sm hover:shadow-md transition-all cursor-pointer p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
                 >
                   <Image src={cat.imagem} alt="" width={70} height={70} className="object-contain" aria-hidden="true" />
-                </button>
+                </Link>
               ))}
             </div>
           </section>
@@ -284,7 +289,7 @@ export default function Home() {
           <section aria-label="Produtos por categoria" className="flex flex-col gap-16 mt-10">
 
             {categorias.map((cat) => {
-              const categoriaKey = cat.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') as keyof typeof mockData;
+              const categoriaKey = slugify(cat.nome) as keyof typeof mockData;
               const produtosReais = mockData[categoriaKey] || [];
 
               let produtosExibidos: Produto[] = produtosReais.slice(0, 5);
@@ -306,13 +311,13 @@ export default function Home() {
                       Produtos <span className="text-sm font-normal text-black lowercase">em</span>{' '}
                       <span className="text-sm text-[#6a38ff] font-normal">{cat.nome}</span>
                     </h2>
-                    <button
-                      type="button"
+                    <Link
+                      href={`/categorias/${slugify(cat.nome)}`}
                       aria-label={`Ver mais produtos em ${cat.nome}`}
                       className="text-sm text-[#6a38ff] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded"
                     >
                       ver mais
-                    </button>
+                    </Link>
                   </div>
 
                   {/* Grid de Produtos */}
