@@ -1,69 +1,358 @@
-import Image from "next/image";
+"use client";
+
+import React, { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { listarProdutos, type Produto } from './listarProdutos';
+
+const categorias = [
+  { nome: 'Mercado', imagem: '/imagens/categorias/mercado.png' },
+  { nome: 'Farmácia', imagem: '/imagens/categorias/farmacia.png' },
+  { nome: 'Beleza', imagem: '/imagens/categorias/beleza.png' },
+  { nome: 'Moda', imagem: '/imagens/categorias/moda.png' },
+  { nome: 'Eletrônicos', imagem: '/imagens/categorias/eletronicos.png' },
+  { nome: 'Jogos', imagem: '/imagens/categorias/jogos.png' },
+  { nome: 'Brinquedos', imagem: '/imagens/categorias/brinquedos.png' },
+  { nome: 'Casa', imagem: '/imagens/categorias/casa.png' },
+];
+
+// Gera o slug da categoria: 'Farmácia' → 'farmacia', 'Eletrônicos' → 'eletronicos'
+const slugify = (nome: string) =>
+  nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+type EstadoCategoria =
+  | { status: 'carregando' }
+  | { status: 'ok'; produtos: Produto[] }
+  | { status: 'erro'; mensagem: string };
+
+const MENSAGEM_CONEXAO =
+  'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
+const MENSAGEM_ERRO = 'Não foi possível carregar os produtos.';
+
+const ProductSkeleton = () => (
+  <div
+    role="status"
+    aria-label="Carregando produto"
+    className="bg-white/50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col justify-between h-[260px]"
+  >
+    <div aria-hidden="true" className="bg-gray-100/50 aspect-square rounded-xl mb-4 flex items-center justify-center" />
+    <div aria-hidden="true" className="flex flex-col gap-2 px-1 mt-auto">
+      <div className="h-3 bg-gray-100 rounded w-3/4"></div>
+      <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+      <div className="h-2 bg-gray-100 rounded w-1/4 mt-2"></div>
+    </div>
+  </div>
+);
+
+const ProductCard = ({ produto }: { produto: Produto }) => {
+  //para o exemplo da farmácia e mercado
+  const badgeColor = produto.companyLogo === 'CJR' ? 'bg-[#004b6e]' : produto.companyLogo === 'NATU' ? 'bg-[#e04a6e]' : 'bg-gray-200';
+
+  const precoNumerico = Number(produto.price);
+  const precoFormatado = Number.isFinite(precoNumerico)
+    ? precoNumerico.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : '--,--';
+
+  const nomeAcessivel = [
+    produto.name || 'Produto sem nome',
+    `R$${precoFormatado} por ${produto.unit || 'unidade'}`,
+    produto.available ? 'Disponível' : 'Indisponível',
+  ].join(', ');
+
+  return (
+    <button
+      type="button"
+      aria-label={nomeAcessivel}
+      className="text-left w-full bg-white rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-transform duration-300 cursor-pointer group relative flex flex-col justify-between h-[260px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+    >
+      {produto.companyLogo && (
+        <div
+          role="img"
+          aria-label={`Loja ${produto.companyLogo}`}
+          className={`absolute top-4 right-4 w-10 h-10 ${badgeColor} rounded-full z-10 flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shadow-sm overflow-hidden`}
+        >
+          <span aria-hidden="true">{produto.companyLogo}</span>
+        </div>
+      )}
+
+      <div aria-hidden="true" className="bg-[#f8f9fa] aspect-square rounded-xl mb-4 overflow-hidden relative flex items-center justify-center">
+        {produto.imageUrl ? (
+          <Image src={produto.imageUrl} alt="" fill className="object-contain p-2" />
+        ) : (
+          <span className="text-gray-300 text-sm">Sem Imagem</span>
+        )}
+      </div>
+
+      <div aria-hidden="true" className="flex flex-col gap-1 px-1 mt-auto">
+        <span className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2 min-h-[20px]">
+          {produto.name || 'Nome do Produto'}
+        </span>
+
+        <div className="flex items-baseline gap-1 mt-1 min-h-[20px]">
+          <span className="text-sm font-bold text-black">R${precoFormatado}</span>
+          <span className="text-xs text-gray-400">/{produto.unit || '--'}</span>
+        </div>
+
+        <span className={`text-[10px] font-bold uppercase mt-1 tracking-wider ${produto.available ? 'text-[#a4cc15]' : 'text-[#e04a6e]'}`}>
+          {produto.available ? 'Disponível' : 'Indisponível'}
+        </span>
+      </div>
+    </button>
+  );
+};
 
 export default function Home() {
+  const categoriasRef = useRef<HTMLDivElement>(null);
+  const scrollInterval = useRef<NodeJS.Timeout | null>(null);
+  const buscaRef = useRef<HTMLInputElement>(null);
+  const [estados, setEstados] = useState<Record<string, EstadoCategoria>>(
+    () =>
+      Object.fromEntries(
+        categorias.map((cat) => [
+          slugify(cat.nome),
+          { status: 'carregando' } as EstadoCategoria,
+        ]),
+      ),
+  );
+
+  useEffect(() => {
+    let cancelado = false;
+
+    categorias.forEach(async (cat) => {
+      const slug = slugify(cat.nome);
+      const resultado = await listarProdutos(slug);
+      if (cancelado) return;
+      setEstados((prev) => ({
+        ...prev,
+        [slug]:
+          resultado.tipo === 'ok'
+            ? { status: 'ok', produtos: resultado.produtos }
+            : {
+                status: 'erro',
+                mensagem:
+                  resultado.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO,
+              },
+      }));
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const startScroll = (direcao: 'esquerda' | 'direita') => {
+    if (scrollInterval.current) return;
+    const passo = direcao === 'esquerda' ? -12 : 12;
+    scrollInterval.current = setInterval(() => {
+      if (categoriasRef.current) {
+        categoriasRef.current.scrollBy({ left: passo, behavior: 'auto' });
+      }
+    }, 20);
+  };
+
+  const stopScroll = () => {
+    if (scrollInterval.current) {
+      clearInterval(scrollInterval.current);
+      scrollInterval.current = null;
+    }
+  };
+
+  const scrollStep = (direcao: 'esquerda' | 'direita') => {
+    const passo = direcao === 'esquerda' ? -220 : 220;
+    categoriasRef.current?.scrollBy({ left: passo, behavior: 'smooth' });
+  };
+
+  const focarBusca = () => {
+    buscaRef.current?.focus();
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+    <main className="min-h-screen flex flex-col font-sans bg-[#fcf9f2] overflow-x-hidden">
+
+      {/* espaço que dps vai virar a navbar */}
+      <header className="bg-[#0b0b0b] relative w-full pt-28 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative h-[320px] md:h-[370px]">
+
+          <div className="absolute left-6 md:left-22 top-[37%] -translate-y-1/2 z-20">
+            <h1 className="text-3xl md:text-[55px] font-sans font-bold text-white leading-[1] tracking-normal flex flex-col">
+              <span className="md:whitespace-nowrap">Do CAOS à organização,</span>
+              <span className="md:whitespace-nowrap md:ml-20 lg:ml-[148px]">em alguns cliques</span>
+            </h1>
+          </div>
+
+          <div aria-hidden="true" className="hidden md:block absolute right-5 -top-11 md:-top-11 w-[500px] md:w-[600px] h-[750px] md:h-[800px] z-0 pointer-events-none">
             <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+              src="/mascote-home.png"
+              alt=""
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
+              className="object-contain object-top"
+              priority
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
         </div>
-      </main>
-    </div>
+      </header>
+
+      {/* conteudo principal*/}
+      <section aria-label="Conteúdo principal" className="relative z-20 bg-[#fcf9f2] flex-1 pb-20 pt-8">
+        <div className="max-w-7xl mx-auto px-6">
+
+          {/* Barra de Busca */}
+          <form
+            role="search"
+            aria-label="Buscar produtos"
+            onSubmit={(e) => {
+              e.preventDefault();
+              focarBusca();
+            }}
+            className="flex justify-end mb-8"
+          >
+            <div className="bg-white rounded-full flex items-center px-5 py-3 w-full max-w-[500px] shadow-sm border border-gray-100 focus-within:ring-2 focus-within:ring-[#6a38ff]">
+              <label htmlFor="busca" className="sr-only">
+                Buscar produtos
+              </label>
+              <input
+                id="busca"
+                ref={buscaRef}
+                type="text"
+                placeholder="Procurar por..."
+                autoComplete="off"
+                className="flex-1 outline-none text-sm text-[#6a38ff]/60 placeholder:text-[#6a38ff]/60 bg-transparent"
+              />
+              <button
+                type="submit"
+                aria-label="Buscar"
+                className="shrink-0 cursor-pointer text-[#6a38ff]/60 transition-colors hover:text-[#6a38ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded-full"
+              >
+                <svg aria-hidden="true" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </button>
+            </div>
+          </form>
+
+          {/* Categoria */}
+          <section aria-labelledby="titulo-categorias">
+            <div className="flex justify-between items-center mb-6">
+              <h2 id="titulo-categorias" className="text-3xl font-sans text-black">Categoria</h2>
+
+              <div className="hidden gap-2 md:flex">
+                <button
+                  type="button"
+                  onClick={() => scrollStep('esquerda')}
+                  onMouseDown={() => startScroll('esquerda')}
+                  onMouseUp={stopScroll}
+                  onMouseLeave={stopScroll}
+                  onTouchStart={() => startScroll('esquerda')}
+                  onTouchEnd={stopScroll}
+                  aria-label="Ver categorias anteriores"
+                  aria-controls="lista-categorias"
+                  className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 active:scale-95 transition-all border border-gray-100 text-[#6a38ff] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollStep('direita')}
+                  onMouseDown={() => startScroll('direita')}
+                  onMouseUp={stopScroll}
+                  onMouseLeave={stopScroll}
+                  onTouchStart={() => startScroll('direita')}
+                  onTouchEnd={stopScroll}
+                  aria-label="Ver próximas categorias"
+                  aria-controls="lista-categorias"
+                  className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 active:scale-95 transition-all border border-gray-100 text-[#6a38ff] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="lista-categorias"
+              ref={categoriasRef}
+              role="region"
+              aria-label="Categorias de produtos"
+              tabIndex={0}
+              className="flex gap-10 lg:gap-14 overflow-x-auto pb-6 mb-10 pr-6 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded-lg"
+            >
+              {categorias.map((cat) => (
+                <Link
+                  key={cat.nome}
+                  href={`/categorias/${slugify(cat.nome)}`}
+                  aria-label={`Ir para categoria ${cat.nome}`}
+                  className="flex items-center justify-center bg-white rounded-3xl w-[110px] h-[110px] shrink-0 shadow-sm hover:shadow-md transition-all cursor-pointer p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+                >
+                  <Image src={cat.imagem} alt="" width={70} height={70} className="object-contain" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* parte produtos*/}
+          <section aria-label="Produtos por categoria" className="flex flex-col gap-16 mt-10">
+
+            {categorias.map((cat) => {
+              const categoriaKey = slugify(cat.nome);
+              const estado = estados[categoriaKey];
+
+              return (
+                <div key={cat.nome}>
+                  {/* Título da Categoria */}
+                  <div className="flex justify-between items-end mb-6">
+                    <h2 className="text-2xl font-bold text-black">
+                      Produtos <span className="text-sm font-normal text-black lowercase">em</span>{' '}
+                      <span className="text-sm text-[#6a38ff] font-normal">{cat.nome}</span>
+                    </h2>
+                    <Link
+                      href={`/categorias/${categoriaKey}`}
+                      aria-label={`Ver mais produtos em ${cat.nome}`}
+                      className="text-sm text-[#6a38ff] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded"
+                    >
+                      ver mais
+                    </Link>
+                  </div>
+
+                  {/* Grid de Produtos */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    {estado?.status === 'carregando' &&
+                      Array.from({ length: 5 }).map((_, index) => (
+                        <div
+                          key={`skeleton-${categoriaKey}-${index}`}
+                          className={index >= 4 ? 'hidden md:block' : ''}
+                        >
+                          <ProductSkeleton />
+                        </div>
+                      ))}
+
+                    {estado?.status === 'erro' && (
+                      <p role="alert" className="col-span-full text-center text-sm text-red-500">
+                        {estado.mensagem}
+                      </p>
+                    )}
+
+                    {estado?.status === 'ok' && estado.produtos.length === 0 && (
+                      <p className="col-span-full text-center text-sm text-gray-500">
+                        Nenhum produto disponível.
+                      </p>
+                    )}
+
+                    {estado?.status === 'ok' &&
+                      estado.produtos.slice(0, 5).map((prod, index) => (
+                        <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
+                          <ProductCard produto={prod} />
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              );
+            })}
+
+          </section>
+
+        </div>
+      </section>
+    </main>
   );
 }
