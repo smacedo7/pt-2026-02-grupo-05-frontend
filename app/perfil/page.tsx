@@ -67,7 +67,7 @@ export default function PerfilPage() {
           <Link
             href="/"
             aria-label="Voltar"
-            className="absolute bottom-4 left-6 h-9 w-6 rounded text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:bottom-8 sm:h-11 sm:w-7 lg:bottom-[52px] lg:h-[55px] lg:w-9"
+            className="absolute bottom-4 left-2 h-9 w-6 rounded text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:bottom-8 sm:left-6 sm:h-11 sm:w-7 lg:bottom-[52px] lg:h-[55px] lg:w-9"
           >
             <svg
               viewBox="0 0 35 55"
@@ -89,8 +89,8 @@ export default function PerfilPage() {
         {/* cabeçalho do perfil */}
         <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 lg:ml-[72px]">
-            {/* deixa a foto por cima da parte preta */}
-            <div className="relative z-10 -mt-14 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gray-300 sm:-mt-24 sm:h-44 sm:w-44 lg:-mt-[190px] lg:h-[230px] lg:w-[230px]">
+             {/* deixa a foto por cima da parte preta */}
+            <div className="relative z-10 -mt-14 ml-7 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gray-300 sm:-mt-24 sm:ml-0 sm:h-44 sm:w-44 lg:-mt-[190px] lg:h-[230px] lg:w-[230px]">
               {usuario.foto ? (
                 <img
                   src={usuario.foto}
