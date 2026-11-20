@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CardProduto from "@/app/categorias/[slug]/CardProduto";
 import type { Produto } from "@/lib/categorias/tipos";
+import Navbar from "@/components/navbar/Navbar";
 
 type Usuario = {
   nome: string;
@@ -62,7 +63,10 @@ export default function PerfilPage() {
   return (
     <main className="min-h-screen bg-creme pb-12">
       {/* espaço pra navbar que vai vir depois */}
-      <header className="w-full bg-preto pt-28">
+      <header className="relative w-full bg-preto pt-28">
+        <div className="absolute inset-x-0 top-0 z-20">
+          <Navbar />
+        </div>
         <div className="relative mx-auto h-24 max-w-7xl px-6 sm:h-40 lg:h-[325px]">
           <Link
             href="/"
@@ -89,7 +93,7 @@ export default function PerfilPage() {
         {/* cabeçalho do perfil */}
         <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 lg:ml-[72px]">
-             {/* deixa a foto por cima da parte preta */}
+            {/* deixa a foto por cima da parte preta */}
             <div className="relative z-10 -mt-14 ml-7 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gray-300 sm:-mt-24 sm:ml-0 sm:h-44 sm:w-44 lg:-mt-[190px] lg:h-[230px] lg:w-[230px]">
               {usuario.foto ? (
                 <img
