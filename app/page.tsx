@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Navbar from '@/components/navbar/Navbar';
 import { listarProdutos, type Produto } from './listarProdutos';
 
 const categorias = [
@@ -172,8 +173,9 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col font-sans bg-[#fcf9f2] overflow-x-hidden">
 
-      {/* espaço que dps vai virar a navbar */}
-      <header className="bg-[#0b0b0b] relative w-full pt-28 overflow-hidden">
+      <Navbar />
+
+      <section aria-label="Apresentação" className="bg-[#0b0b0b] relative w-full pt-12 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative h-[320px] md:h-[370px]">
 
           <div className="absolute left-6 md:left-22 top-[37%] -translate-y-1/2 z-20">
@@ -194,7 +196,7 @@ export default function Home() {
             />
           </div>
         </div>
-      </header>
+      </section>
 
       {/* conteudo principal*/}
       <section aria-label="Conteúdo principal" className="relative z-20 bg-[#fcf9f2] flex-1 pb-20 pt-8">
@@ -233,7 +235,7 @@ export default function Home() {
           </form>
 
           {/* Categoria */}
-          <section aria-labelledby="titulo-categorias">
+          <section id="categorias" aria-labelledby="titulo-categorias">
             <div className="flex justify-between items-center mb-6">
               <h2 id="titulo-categorias" className="text-3xl font-sans text-black">Categoria</h2>
 
