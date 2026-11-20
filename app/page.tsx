@@ -235,7 +235,7 @@ export default function Home() {
           </form>
 
           {/* Categoria */}
-          <section aria-labelledby="titulo-categorias">
+          <section id="categorias" aria-labelledby="titulo-categorias">
             <div className="flex justify-between items-center mb-6">
               <h2 id="titulo-categorias" className="text-3xl font-sans text-black">Categoria</h2>
 

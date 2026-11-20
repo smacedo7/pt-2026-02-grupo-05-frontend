@@ -6,7 +6,18 @@ import { useSessao } from "./useSessao";
 
 const ICONE = "h-6 w-6 shrink-0";
 const BOTAO_ICONE =
-  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
+  "flex h-9 w-9 items-center justify-center rounded-full md:h-10 md:w-10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
+
+function IconeCategorias() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={ICONE}>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
 
 function IconeSacola() {
   return (
@@ -50,19 +61,23 @@ export default function Navbar() {
 
   return (
     <header className="bg-preto text-creme">
-      <nav aria-label="Principal" className="flex items-center justify-between gap-4 px-4 py-4 md:px-10">
-        <Link href="/" className="rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-roxo">
+      <nav aria-label="Principal" className="flex items-center justify-between gap-2 px-3 py-4 md:gap-4 md:px-10">
+        <Link href="/" className="shrink-0 rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-roxo">
           {/* Logo em branco: o original é preto e ficaria invisível sobre a navbar preta. */}
           <Image
             src="/logo.png"
             alt="Stock.io"
             width={842}
             height={444}
-            className="h-10 w-auto brightness-0 invert md:h-12"
+            className="h-8 w-auto brightness-0 invert md:h-12"
           />
         </Link>
 
-        <div className="flex items-center gap-1 md:gap-3">
+        <div className="flex items-center gap-0.5 md:gap-3">
+          {/* Leva à seção com as categorias da home; não existe página própria de listagem. */}
+          <Link href="/#categorias" title="Categorias" aria-label="Categorias" className={BOTAO_ICONE}>
+            <IconeCategorias />
+          </Link>
           <button type="button" disabled title="Em breve" aria-label="Sacola de compras (em breve)" className={BOTAO_ICONE}>
             <IconeSacola />
           </button>
@@ -74,7 +89,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="whitespace-nowrap rounded px-2 py-2 text-sm font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
+                className="whitespace-nowrap rounded px-1.5 py-2 text-sm font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
               >
                 LOGIN
               </Link>
