@@ -175,7 +175,7 @@ export default function Home() {
 
       <Navbar />
 
-      <section aria-label="Apresentação" className="bg-preto relative w-full pt-12 overflow-hidden">
+      <section aria-label="Apresentação" className="bg-[#0b0b0b] relative w-full pt-12 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative h-[320px] md:h-[370px]">
 
           <div className="absolute left-6 md:left-22 top-[37%] -translate-y-1/2 z-20">
