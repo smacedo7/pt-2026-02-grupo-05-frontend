@@ -1,30 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/navbar/Navbar"; // mantenha o caminho que você já usa
+import Navbar from "@/components/navbar/Navbar";
 import CardProduto from "@/app/categorias/[slug]/CardProduto";
 import type { Produto } from "@/lib/categorias/tipos";
 import { buscarPerfil, type UsuarioPerfil } from "./buscarPerfil";
+import { buscarProdutos } from "./buscarProdutos";
 
 const MENSAGEM_CONEXAO =
   "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
-const MENSAGEM_ERRO = "Não foi possível carregar o perfil.";
+const MENSAGEM_ERRO = "Não foi possível carregar as informações.";
 
-type Estado =
+type EstadoPerfil =
   | { status: "carregando" }
   | { status: "ok"; usuario: UsuarioPerfil }
   | { status: "erro"; mensagem: string };
 
+type EstadoProdutos =
+  | { status: "carregando" }
+  | { status: "ok"; produtos: Produto[] }
+  | { status: "erro"; mensagem: string };
+
 export default function PerfilPage() {
   const router = useRouter();
-  const [estado, setEstado] = useState<Estado>({ status: "carregando" });
-  const [tentativa, setTentativa] = useState(0);
+  const [estado, setEstado] = useState<EstadoPerfil>({ status: "carregando" });
+  const [estadoProdutos, setEstadoProdutos] = useState<EstadoProdutos>({
+    status: "carregando",
+  });
 
-  // ainda não tem a rota dos produtos no back
-  const produtos: Produto[] = [];
-
+  // Perfil
   useEffect(() => {
     let cancelado = false;
 
@@ -49,7 +55,33 @@ export default function PerfilPage() {
     return () => {
       cancelado = true;
     };
-  }, [router, tentativa]);
+  }, [router]);
+
+  // Produtos (só busca depois que o perfil carregar)
+  useEffect(() => {
+    if (estado.status !== "ok") return;
+    let cancelado = false;
+
+    async function carregarProdutos() {
+      const resultado = await buscarProdutos(10);
+      if (cancelado) return;
+
+      if (resultado.tipo === "ok") {
+        setEstadoProdutos({ status: "ok", produtos: resultado.produtos });
+      } else {
+        setEstadoProdutos({
+          status: "erro",
+          mensagem:
+            resultado.tipo === "conexao" ? MENSAGEM_CONEXAO : MENSAGEM_ERRO,
+        });
+      }
+    }
+
+    carregarProdutos();
+    return () => {
+      cancelado = true;
+    };
+  }, [estado]);
 
   useEffect(() => {
     if (estado.status === "ok") {
@@ -57,20 +89,8 @@ export default function PerfilPage() {
     }
   }, [estado]);
 
-  function tentarNovamente() {
-    setEstado({ status: "carregando" });
-    setTentativa((t) => t + 1);
-  }
-
   const usuario = estado.status === "ok" ? estado.usuario : null;
   const inicial = usuario ? usuario.name.charAt(0).toUpperCase() : "";
-
-  const anuncio =
-    estado.status === "carregando"
-      ? "Carregando perfil."
-      : estado.status === "ok"
-        ? `Perfil de ${estado.usuario.name} carregado.`
-        : "";
 
   return (
     <div className="min-h-screen bg-creme pb-12">
@@ -80,10 +100,6 @@ export default function PerfilPage() {
       >
         Pular para o conteúdo do perfil
       </a>
-
-      <div role="status" aria-live="polite" className="sr-only">
-        {anuncio}
-      </div>
 
       <div className="relative w-full bg-preto pt-28">
         <div className="absolute inset-x-0 top-0 z-20">
@@ -126,14 +142,6 @@ export default function PerfilPage() {
         {estado.status === "erro" && (
           <div role="alert" className="mt-10 flex flex-col items-start gap-4">
             <p className="text-lg text-red-700">{estado.mensagem}</p>
-            <button
-              type="button"
-              onClick={tentarNovamente}
-              aria-label="Tentar carregar o perfil novamente"
-              className="rounded-full border-2 border-transparent bg-[#6D3BFF] px-6 py-2 font-medium text-white hover:bg-[#5a2ee0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D3BFF] focus-visible:ring-offset-2"
-            >
-              Tentar novamente
-            </button>
           </div>
         )}
 
@@ -193,7 +201,6 @@ export default function PerfilPage() {
                 </dl>
               </div>
 
-
               <Link
                 href="/perfil/editar"
                 aria-label={`Editar perfil de ${usuario.name}`}
@@ -211,7 +218,7 @@ export default function PerfilPage() {
                 >
                   Produtos
                 </h2>
-                {produtos.length > 0 && (
+                {estadoProdutos.status === "ok" && estadoProdutos.produtos.length > 0 && (
                   <Link
                     href="/perfil/produtos"
                     aria-label="Ver mais produtos"
@@ -222,8 +229,23 @@ export default function PerfilPage() {
                 )}
               </div>
 
-              {produtos.length > 0 ? (
+              {estadoProdutos.status === "carregando" && (
+                <p className="mt-4 text-gray-600">Carregando produtos...</p>
+              )}
 
+              {estadoProdutos.status === "erro" && (
+                <p role="alert" className="mt-4 text-red-600">
+                  {estadoProdutos.mensagem}
+                </p>
+              )}
+
+              {estadoProdutos.status === "ok" && estadoProdutos.produtos.length === 0 && (
+                <p className="mt-4 text-gray-600">
+                  Nenhum produto cadastrado ainda.
+                </p>
+              )}
+
+              {estadoProdutos.status === "ok" && estadoProdutos.produtos.length > 0 && (
                 <div
                   role="region"
                   aria-labelledby="titulo-produtos"
@@ -231,7 +253,7 @@ export default function PerfilPage() {
                   className="mt-4 snap-x overflow-x-auto rounded-lg pb-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D3BFF] lg:mt-11"
                 >
                   <ul role="list" className="flex gap-4 lg:gap-8">
-                    {produtos.map((produto) => (
+                    {estadoProdutos.produtos.map((produto) => (
                       <li
                         key={produto.id}
                         className="w-48 shrink-0 snap-start sm:w-56 lg:w-[229px]"
@@ -241,10 +263,6 @@ export default function PerfilPage() {
                     ))}
                   </ul>
                 </div>
-              ) : (
-                <p className="mt-4 text-gray-600">
-                  Nenhum produto cadastrado ainda.
-                </p>
               )}
             </section>
           </>
