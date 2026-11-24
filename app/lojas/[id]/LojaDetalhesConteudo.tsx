@@ -5,23 +5,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/navbar/Navbar";
-import CardProduto from "@/app/categorias/[slug]/CardProduto";
+import CardProdutoLoja from "@/components/loja/CardProdutoLoja";
 import ModalEditarLoja from "@/components/loja/ModalEditarLoja";
+import ModalEditarProduto from "@/components/loja/ModalEditarProduto";
 import { buscarLoja, obterTokenAutenticado } from "@/lib/lojas/lojasApi";
 import type { Loja } from "@/lib/lojas/tipos";
-import type { Produto } from "@/lib/categorias/tipos";
+import { listarImagensProduto } from "@/lib/produtos/produtosApi";
+import type { ProdutoLoja } from "@/lib/produtos/tipos";
 import { api } from "@/lib/api";
 
 type Props = {
   lojaId: number;
-};
-
-type ProdutoBackend = {
-  id: number;
-  name: string;
-  price: number;
-  stock: number;
-  createdAt: string;
 };
 
 const ITENS_POR_PAGINA = 10;
@@ -49,7 +43,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
   const router = useRouter();
 
   const [loja, setLoja] = useState<Loja | null>(null);
-  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [produtos, setProdutos] = useState<ProdutoLoja[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -58,6 +52,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     name?: string;
   } | null>(null);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [produtoEditando, setProdutoEditando] = useState<ProdutoLoja | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
 
@@ -83,7 +78,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
       }
 
       const token = obterTokenAutenticado();
-      const [usuarioRes, resLoja, produtosData] = await Promise.all([
+      const [usuarioRes, resLoja, produtosRes] = await Promise.all([
         token
           ? api
               .get<{ id: number; name?: string }>("/users/me", {
@@ -94,9 +89,9 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
           : Promise.resolve(null),
         buscarLoja(lojaId),
         api
-          .get<ProdutoBackend[]>("/products", { params: { storeId: lojaId } })
+          .get<ProdutoLoja[]>("/products", { params: { storeId: lojaId } })
           .then((r) => (Array.isArray(r.data) ? r.data : []))
-          .catch(() => [] as ProdutoBackend[]),
+          .catch(() => [] as ProdutoLoja[]),
       ]);
 
       if (cancelado) return;
@@ -107,18 +102,20 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
 
       if (resLoja.tipo === "sucesso") {
         setLoja(resLoja.loja);
+
+        const imagensResultados = await Promise.allSettled(
+          produtosRes.map((p) => listarImagensProduto(p.id))
+        );
+        if (cancelado) return;
+
         setProdutos(
-          produtosData.map((item) => ({
-            id: String(item.id),
-            nome: item.name,
-            preco: item.price,
-            disponivel: item.stock > 0,
-            imagemUrl: null,
-            categoriaSlug: "",
-            subcategoriaSlug: "",
-            criadoEm: item.createdAt,
-            avaliacao: 5,
-          }))
+          produtosRes.map((p, idx) => {
+            const resImg = imagensResultados[idx];
+            return {
+              ...p,
+              images: resImg.status === "fulfilled" ? resImg.value : [],
+            };
+          })
         );
       } else if (resLoja.tipo === "nao-encontrado") {
         setErro("Loja não encontrada.");
@@ -147,17 +144,38 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     return produtos.slice(inicio, inicio + ITENS_POR_PAGINA);
   }, [produtos, paginaAtual]);
 
-  function aoSalvarLoja(lojaAtualizada: Loja) {
-    setLoja(lojaAtualizada);
-    setMensagemSucesso("Informações da loja atualizadas com sucesso!");
+  function mostrarFeedback(mensagem: string) {
+    setMensagemSucesso(mensagem);
     if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     feedbackTimerRef.current = setTimeout(() => {
       setMensagemSucesso(null);
     }, 5000);
   }
 
+  function aoSalvarLoja(lojaAtualizada: Loja) {
+    setLoja(lojaAtualizada);
+    mostrarFeedback("Informações da loja atualizadas com sucesso!");
+  }
+
   function aoDeletarLoja() {
     router.push("/");
+  }
+
+  function aoSalvarProduto(produtoAtualizado: ProdutoLoja) {
+    setProdutos((prev) =>
+      prev.map((item) => (item.id === produtoAtualizado.id ? produtoAtualizado : item))
+    );
+    mostrarFeedback("Produto atualizado com sucesso!");
+  }
+
+  function aoDeletarProduto(produtoId: number) {
+    setProdutos((prev) => {
+      const filtrados = prev.filter((item) => item.id !== produtoId);
+      const novoTotalPaginas = Math.max(1, Math.ceil(filtrados.length / ITENS_POR_PAGINA));
+      setPaginaAtual((atual) => Math.min(atual, novoTotalPaginas));
+      return filtrados;
+    });
+    mostrarFeedback("Produto excluído com sucesso!");
   }
 
   return (
@@ -352,7 +370,12 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                     {produtosDestaque.map((produto) => (
-                      <CardProduto key={`destaque-${produto.id}`} produto={produto} />
+                      <CardProdutoLoja
+                        key={`destaque-${produto.id}`}
+                        produto={produto}
+                        ehDono={ehDono}
+                        aoEditar={setProdutoEditando}
+                      />
                     ))}
                   </div>
                 )}
@@ -381,7 +404,12 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                       {produtosPaginados.map((produto) => (
-                        <CardProduto key={`grade-${produto.id}`} produto={produto} />
+                        <CardProdutoLoja
+                          key={`grade-${produto.id}`}
+                          produto={produto}
+                          ehDono={ehDono}
+                          aoEditar={setProdutoEditando}
+                        />
                       ))}
                     </div>
 
@@ -421,6 +449,13 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
             aoFechar={() => setModalEditarAberto(false)}
             aoSalvar={aoSalvarLoja}
             aoDeletar={aoDeletarLoja}
+          />
+          <ModalEditarProduto
+            produto={produtoEditando}
+            aberto={Boolean(produtoEditando)}
+            aoFechar={() => setProdutoEditando(null)}
+            aoSalvar={aoSalvarProduto}
+            aoDeletar={aoDeletarProduto}
           />
         </main>
       )}
