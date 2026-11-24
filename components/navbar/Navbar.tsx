@@ -1,12 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import ModalAlterarSenha from "@/components/perfil/ModalAlterarSenha";
+import ModalEditarPerfil from "@/components/perfil/ModalEditarPerfil";
 import { useSessao } from "./useSessao";
 
 const ICONE = "h-6 w-6 shrink-0";
 const BOTAO_ICONE =
-  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
+  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent cursor-pointer";
 
 function IconeSacola() {
   return (
@@ -47,6 +52,38 @@ function IconeSair() {
 
 export default function Navbar() {
   const { estado, encerrarSessao } = useSessao();
+  const router = useRouter();
+  const [modalPerfilAberto, setModalPerfilAberto] = useState(false);
+  const [modalSenhaAberto, setModalSenhaAberto] = useState(false);
+
+  async function tratarNavegacaoLoja() {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    if (!token) {
+      router.push("/");
+      return;
+    }
+
+    try {
+      const { data: usuario } = await api.get<{ id: number }>("/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (usuario?.id) {
+        const { data: lojas } = await api.get<{ id: number }[]>("/stores", {
+          params: { userId: usuario.id },
+        });
+
+        if (Array.isArray(lojas) && lojas.length > 0 && typeof lojas[0].id === "number") {
+          router.push(`/lojas/${lojas[0].id}`);
+          return;
+        }
+      }
+    } catch {
+      // Falha ao obter dados ou sem loja
+    }
+
+    router.push("/");
+  }
 
   return (
     <header className="bg-preto text-creme">
@@ -66,7 +103,13 @@ export default function Navbar() {
           <button type="button" disabled title="Em breve" aria-label="Sacola de compras (em breve)" className={BOTAO_ICONE}>
             <IconeSacola />
           </button>
-          <button type="button" disabled title="Em breve" aria-label="Lojas (em breve)" className={BOTAO_ICONE}>
+          <button
+            type="button"
+            onClick={tratarNavegacaoLoja}
+            title={estado === "logado" ? "Minha Loja" : "Lojas"}
+            aria-label="Lojas"
+            className={BOTAO_ICONE}
+          >
             <IconeLoja />
           </button>
 
@@ -89,7 +132,13 @@ export default function Navbar() {
 
           {estado === "logado" && (
             <>
-              <button type="button" disabled title="Em breve" aria-label="Perfil (em breve)" className={BOTAO_ICONE}>
+              <button
+                type="button"
+                onClick={() => setModalPerfilAberto(true)}
+                title="Editar Perfil"
+                aria-label="Editar Perfil"
+                className={BOTAO_ICONE}
+              >
                 <IconeUsuario />
               </button>
               <button
@@ -105,6 +154,29 @@ export default function Navbar() {
           )}
         </div>
       </nav>
+
+      <ModalEditarPerfil
+        aberto={modalPerfilAberto}
+        aoFechar={() => setModalPerfilAberto(false)}
+        aoAbrirAlterarSenha={() => {
+          setModalPerfilAberto(false);
+          setModalSenhaAberto(true);
+        }}
+        aoDeletarConta={() => {
+          encerrarSessao();
+          router.push("/");
+        }}
+      />
+
+      <ModalAlterarSenha
+        aberto={modalSenhaAberto}
+        aoVoltar={() => {
+          setModalSenhaAberto(false);
+          setModalPerfilAberto(true);
+        }}
+        aoFechar={() => setModalSenhaAberto(false)}
+        aoSalvar={() => setModalSenhaAberto(false)}
+      />
     </header>
   );
 }
