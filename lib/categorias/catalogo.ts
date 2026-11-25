@@ -24,18 +24,31 @@ const COMPARADORES: Record<Ordenacao, (a: Produto, b: Produto) => number> = {
   "melhor-avaliados": (a, b) => b.avaliacao - a.avaliacao,
 };
 
+/** Normaliza o texto de busca para comparação case-insensitive em pt-BR. */
+export function normalizarTextoBusca(texto: string): string {
+  return texto.trim().toLocaleLowerCase("pt-BR");
+}
+
+/** Verifica se o nome do produto contém o termo de busca já normalizado. */
+export function correspondeBuscaPorNome(
+  nome: string | null | undefined,
+  termoNormalizado: string,
+): boolean {
+  return termoNormalizado === "" || (nome ?? "").toLocaleLowerCase("pt-BR").includes(termoNormalizado);
+}
+
 // Filtra por subcategoria e por nome (sem diferenciar maiúsculas/minúsculas) e
 // ordena. Os critérios combinam. Empates mantêm a ordem padrão, pois a ordenação
 // do JavaScript é estável.
 export function filtrarEOrdenar(produtos: Produto[], criterios: Criterios): Produto[] {
-  const termo = criterios.busca.trim().toLocaleLowerCase("pt-BR");
+  const termo = normalizarTextoBusca(criterios.busca);
 
   return produtos
     .filter(
       (produto) =>
         (criterios.subcategoriaSlug === null ||
           produto.subcategoriaSlug === criterios.subcategoriaSlug) &&
-        produto.nome.toLocaleLowerCase("pt-BR").includes(termo),
+        correspondeBuscaPorNome(produto.nome, termo),
     )
     .sort(COMPARADORES[criterios.ordenacao]);
 }
