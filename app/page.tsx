@@ -109,6 +109,7 @@ export default function Home() {
   const categoriasRef = useRef<HTMLDivElement>(null);
   const scrollInterval = useRef<NodeJS.Timeout | null>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
+  const produtosRef = useRef<HTMLElement>(null);
   // Texto digitado no campo e termo aplicado (só muda ao enviar o formulário).
   const [textoBusca, setTextoBusca] = useState('');
   const [termoAplicado, setTermoAplicado] = useState('');
@@ -170,7 +171,12 @@ export default function Home() {
   };
 
   const aplicarBusca = () => {
-    setTermoAplicado(textoBusca.trim());
+    const termo = textoBusca.trim();
+    setTermoAplicado(termo);
+    // Os resultados ficam abaixo do carrossel de categorias: leva o usuário até eles.
+    if (termo !== '') {
+      produtosRef.current?.scrollIntoView({ block: 'start' });
+    }
   };
 
   const limparBusca = () => {
@@ -332,7 +338,7 @@ export default function Home() {
           </section>
 
           {/* parte produtos*/}
-          <section aria-label="Produtos por categoria" className="flex flex-col gap-16 mt-10">
+          <section ref={produtosRef} aria-label="Produtos por categoria" className="flex flex-col gap-16 mt-10 scroll-mt-24">
 
             <div role="status" aria-live="polite">
               {semResultados && (
