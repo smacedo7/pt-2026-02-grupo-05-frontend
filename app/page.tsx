@@ -109,6 +109,9 @@ export default function Home() {
   const categoriasRef = useRef<HTMLDivElement>(null);
   const scrollInterval = useRef<NodeJS.Timeout | null>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
+  // Texto digitado no campo e termo aplicado (só muda ao enviar o formulário).
+  const [textoBusca, setTextoBusca] = useState('');
+  const [termoAplicado, setTermoAplicado] = useState('');
   const [estados, setEstados] = useState<Record<string, EstadoCategoria>>(
     () =>
       Object.fromEntries(
@@ -166,9 +169,27 @@ export default function Home() {
     categoriasRef.current?.scrollBy({ left: passo, behavior: 'smooth' });
   };
 
-  const focarBusca = () => {
-    buscaRef.current?.focus();
+  const aplicarBusca = () => {
+    setTermoAplicado(textoBusca.trim());
   };
+
+  const termoNormalizado = termoAplicado.toLocaleLowerCase('pt-BR');
+  const buscando = termoNormalizado !== '';
+
+  const filtrarProdutos = (produtos: Produto[]) =>
+    buscando
+      ? produtos.filter((p) =>
+          (p.name ?? '').toLocaleLowerCase('pt-BR').includes(termoNormalizado),
+        )
+      : produtos;
+
+  const estadosLista = Object.values(estados);
+  const carregando = estadosLista.some((e) => e.status === 'carregando');
+  const totalEncontrados = estadosLista.reduce(
+    (total, e) => total + (e.status === 'ok' ? filtrarProdutos(e.produtos).length : 0),
+    0,
+  );
+  const semResultados = buscando && !carregando && totalEncontrados === 0;
 
   return (
     <main className="min-h-screen flex flex-col font-sans bg-[#fcf9f2] overflow-x-hidden">
@@ -208,7 +229,7 @@ export default function Home() {
             aria-label="Buscar produtos"
             onSubmit={(e) => {
               e.preventDefault();
-              focarBusca();
+              aplicarBusca();
             }}
             className="flex justify-end mb-8"
           >
@@ -219,6 +240,8 @@ export default function Home() {
               <input
                 id="busca"
                 ref={buscaRef}
+                value={textoBusca}
+                onChange={(e) => setTextoBusca(e.target.value)}
                 type="text"
                 placeholder="Procurar por..."
                 autoComplete="off"
@@ -295,9 +318,26 @@ export default function Home() {
           {/* parte produtos*/}
           <section aria-label="Produtos por categoria" className="flex flex-col gap-16 mt-10">
 
+            <div role="status" aria-live="polite">
+              {semResultados && (
+                <p className="text-center text-base text-gray-600">
+                  Nenhum produto encontrado para &ldquo;{termoAplicado}&rdquo;.
+                </p>
+              )}
+            </div>
+
             {categorias.map((cat) => {
               const categoriaKey = slugify(cat.nome);
               const estado = estados[categoriaKey];
+
+              // Durante a busca, categorias carregadas sem correspondência ficam ocultas.
+              if (
+                buscando &&
+                estado?.status === 'ok' &&
+                filtrarProdutos(estado.produtos).length === 0
+              ) {
+                return null;
+              }
 
               return (
                 <div key={cat.nome}>
@@ -341,7 +381,7 @@ export default function Home() {
                     )}
 
                     {estado?.status === 'ok' &&
-                      estado.produtos.slice(0, 5).map((prod, index) => (
+                      filtrarProdutos(estado.produtos).slice(0, 5).map((prod, index) => (
                         <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
                           <ProductCard produto={prod} />
                         </div>
