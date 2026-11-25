@@ -173,6 +173,12 @@ export default function Home() {
     setTermoAplicado(textoBusca.trim());
   };
 
+  const limparBusca = () => {
+    setTextoBusca('');
+    setTermoAplicado('');
+    buscaRef.current?.focus();
+  };
+
   const termoNormalizado = termoAplicado.toLocaleLowerCase('pt-BR');
   const buscando = termoNormalizado !== '';
 
@@ -247,6 +253,16 @@ export default function Home() {
                 autoComplete="off"
                 className="flex-1 outline-none text-sm text-[#6a38ff]/60 placeholder:text-[#6a38ff]/60 bg-transparent"
               />
+              {(textoBusca !== '' || buscando) && (
+                <button
+                  type="button"
+                  onClick={limparBusca}
+                  aria-label="Limpar busca"
+                  className="shrink-0 mr-3 cursor-pointer text-[#6a38ff]/60 transition-colors hover:text-[#6a38ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] rounded-full"
+                >
+                  <svg aria-hidden="true" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              )}
               <button
                 type="submit"
                 aria-label="Buscar"
