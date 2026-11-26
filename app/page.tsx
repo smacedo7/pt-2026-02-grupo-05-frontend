@@ -15,7 +15,7 @@ import {
 import { correspondeBuscaPorNome, normalizarTextoBusca } from '@/lib/categorias/catalogo';
 import { listarCategoriasRaiz } from '@/lib/categorias/listarCategoriasRaiz';
 import type { ProdutoApi } from '@/lib/produtos/tipos';
-import { listarProdutos, mensagemFalhaProdutos } from './listarProdutos';
+import { listarProdutosDaCategoriaHome, mensagemFalhaProdutos } from './listarProdutos';
 
 type EstadoCategoria =
   | { status: 'carregando' }
@@ -71,7 +71,7 @@ export default function Home() {
       setLista({ status: 'ok', categorias });
 
       categorias.forEach(async (cat) => {
-        const resultado = await listarProdutos(cat.id);
+        const resultado = await listarProdutosDaCategoriaHome(cat);
         if (cancelado) return;
         setEstados((prev) => ({
           ...prev,
