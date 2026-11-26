@@ -32,6 +32,18 @@ const MENSAGEM_CONEXAO =
   'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
 const MENSAGEM_ERRO_CATEGORIAS = 'Não foi possível carregar as categorias.';
 
+function BotaoTentarNovamente({ aoClicar }: { aoClicar: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={aoClicar}
+      className="cursor-pointer rounded-full bg-roxo px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[#5c2de0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+    >
+      Tentar novamente
+    </button>
+  );
+}
+
 export default function Home() {
   const buscaRef = useRef<HTMLInputElement>(null);
   const produtosRef = useRef<HTMLElement>(null);
@@ -80,6 +92,7 @@ export default function Home() {
 
   const tentarNovamente = () => {
     setLista({ status: 'carregando' });
+    setEstados({});
     setTentativa((anterior) => anterior + 1);
   };
 
@@ -215,9 +228,12 @@ export default function Home() {
             </div>
 
             {erroNaBusca && (
-              <p role="alert" className="text-center text-sm text-red-500">
-                {erroNaBusca}
-              </p>
+              <div className="flex flex-col items-center gap-3 text-center">
+                <p role="alert" className="text-sm text-red-500">
+                  {erroNaBusca}
+                </p>
+                <BotaoTentarNovamente aoClicar={tentarNovamente} />
+              </div>
             )}
 
             {secoesVisiveis.map(({ categoria, estado, produtosVisiveis }) => (
@@ -248,9 +264,12 @@ export default function Home() {
                     ))}
 
                   {estado.status === 'erro' && (
-                    <p role="alert" className="col-span-full text-center text-sm text-red-500">
-                      {estado.mensagem}
-                    </p>
+                    <div className="col-span-full flex flex-col items-center gap-3 text-center">
+                      <p role="alert" className="text-sm text-red-500">
+                        {estado.mensagem}
+                      </p>
+                      <BotaoTentarNovamente aoClicar={tentarNovamente} />
+                    </div>
                   )}
 
                   {estado.status === 'ok' && estado.produtos.length === 0 && (
