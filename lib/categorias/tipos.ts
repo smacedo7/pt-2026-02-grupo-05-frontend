@@ -21,6 +21,7 @@ export type Categoria = {
   subcategorias: Subcategoria[];
 };
 
+/** Formato exibido pelos cards. Os campos opcionais só aparecem quando informados. */
 export type Produto = {
   id: string;
   nome: string;
@@ -30,5 +31,9 @@ export type Produto = {
   categoriaSlug: string;
   subcategoriaSlug: string;
   criadoEm: string;
-  avaliacao: number;
+  avaliacao?: number;
+  estoque?: number;
+  /** null: a tela não recebeu o nome da loja e mostra o aviso no lugar. */
+  lojaNome?: string | null;
+  categoriaNome?: string;
 };

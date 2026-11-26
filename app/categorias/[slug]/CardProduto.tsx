@@ -32,11 +32,21 @@ export default function CardProduto({ produto }: Props) {
       )}
 
       <div className="flex flex-1 flex-col gap-1">
-        <h3 className="text-base font-semibold leading-tight text-preto md:text-lg">{produto.nome}</h3>
+        <h3 className="break-words text-base font-semibold leading-tight text-preto md:text-lg">{produto.nome}</h3>
         <p className="text-sm font-medium text-preto">{formatadorPreco.format(produto.preco)}</p>
-        <p className="text-xs text-preto/80">
-          Avaliação média: {formatadorAvaliacao.format(produto.avaliacao)} de 5
-        </p>
+        {produto.categoriaNome && <p className="text-xs text-preto/80">{produto.categoriaNome}</p>}
+        {produto.lojaNome !== undefined && (
+          <p className="text-xs text-preto/80">{produto.lojaNome ?? "Loja não informada"}</p>
+        )}
+        {produto.estoque !== undefined && produto.estoque > 0 && (
+          <p className="text-xs text-preto/80">{produto.estoque} em estoque</p>
+        )}
+        {/* A API de produtos não tem avaliação: a linha só aparece para quem a informa. */}
+        {produto.avaliacao !== undefined && (
+          <p className="text-xs text-preto/80">
+            Avaliação média: {formatadorAvaliacao.format(produto.avaliacao)} de 5
+          </p>
+        )}
       </div>
 
       {produto.disponivel ? (

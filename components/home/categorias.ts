@@ -1,6 +1,7 @@
 import type { CategoriaApi } from '@/lib/categorias/tipos';
 
 export type CategoriaHome = {
+  id: number;
   nome: string;
   slug: string;
   imagem: string | null;
@@ -27,6 +28,6 @@ export function prepararCategoriasHome(categorias: CategoriaApi[]): CategoriaHom
     return indice === -1 ? ORDEM.length : indice;
   };
   return categorias
-    .map(({ name, slug }) => ({ nome: name, slug, imagem: IMAGENS_POR_SLUG.get(slug) ?? null }))
+    .map(({ id, name, slug }) => ({ id, nome: name, slug, imagem: IMAGENS_POR_SLUG.get(slug) ?? null }))
     .sort((a, b) => posicao(a.slug) - posicao(b.slug));
 }

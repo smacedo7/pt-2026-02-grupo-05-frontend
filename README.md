@@ -20,6 +20,25 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Integração de produtos
+
+A home e as páginas de categoria consultam a API configurada em `NEXT_PUBLIC_API_URL`
+(padrão `http://localhost:3001`). O backend só aceita requisições do navegador vindas de
+`http://localhost:3000`.
+
+Limitações atuais:
+
+- `GET /products` não envia imagens nem o nome da loja: os cards mostram "Sem imagem" e
+  "Loja não informada". Não é feita uma requisição de detalhe por produto.
+- A página de categoria exibe no máximo 100 produtos, somando a categoria e as
+  subcategorias diretas. Busca, filtros e ordenação consideram apenas esses produtos.
+  Ao atingir o limite, a página avisa.
+- Subcategorias de segundo nível em diante não são consultadas.
+- A home mostra até 5 produtos por categoria raiz, sem incluir subcategorias, e a busca
+  da home considera apenas os produtos carregados.
+- Não há avaliação de produto na API, por isso a categoria não exibe nem ordena por
+  avaliação.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
