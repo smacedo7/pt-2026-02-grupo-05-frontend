@@ -14,22 +14,22 @@ import {
 } from '@/components/home/categorias';
 import { correspondeBuscaPorNome, normalizarTextoBusca } from '@/lib/categorias/catalogo';
 import { listarCategoriasRaiz } from '@/lib/categorias/listarCategoriasRaiz';
-import { listarProdutos, type Produto } from './listarProdutos';
+import type { ProdutoApi } from '@/lib/produtos/tipos';
+import { listarProdutos, mensagemFalhaProdutos } from './listarProdutos';
 
 type EstadoCategoria =
   | { status: 'carregando' }
-  | { status: 'ok'; produtos: Produto[] }
+  | { status: 'ok'; produtos: ProdutoApi[] }
   | { status: 'erro'; mensagem: string };
 
 type SecaoCategoria = {
   categoria: CategoriaHome;
   estado: EstadoCategoria;
-  produtosVisiveis: Produto[];
+  produtosVisiveis: ProdutoApi[];
 };
 
 const MENSAGEM_CONEXAO =
   'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
-const MENSAGEM_ERRO = 'Não foi possível carregar os produtos.';
 const MENSAGEM_ERRO_CATEGORIAS = 'Não foi possível carregar as categorias.';
 
 export default function Home() {
@@ -59,17 +59,14 @@ export default function Home() {
       setLista({ status: 'ok', categorias });
 
       categorias.forEach(async (cat) => {
-        const resultado = await listarProdutos(cat.slug);
+        const resultado = await listarProdutos(cat.id);
         if (cancelado) return;
         setEstados((prev) => ({
           ...prev,
           [cat.slug]:
             resultado.tipo === 'ok'
               ? { status: 'ok', produtos: resultado.produtos }
-              : {
-                  status: 'erro',
-                  mensagem: resultado.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO,
-                },
+              : { status: 'erro', mensagem: mensagemFalhaProdutos(resultado.tipo) },
         }));
       });
     }
@@ -94,7 +91,7 @@ export default function Home() {
     let totalOk = 0;
     let totalErros = 0;
     let totalEncontrados = 0;
-    let mensagemErroGeral = MENSAGEM_ERRO;
+    let mensagemErroGeral = mensagemFalhaProdutos('erro');
     const visiveis: SecaoCategoria[] = [];
     const categorias = lista.status === 'ok' ? lista.categorias : [];
 
@@ -265,7 +262,7 @@ export default function Home() {
                   {estado.status === 'ok' &&
                     produtosVisiveis.map((prod, index) => (
                       <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
-                        <ProductCard produto={prod} />
+                        <ProductCard produto={prod} categoriaNome={categoria.nome} />
                       </div>
                     ))}
                 </div>
