@@ -104,7 +104,11 @@ export default function CatalogoCategoria({ categoria, produtos }: Props) {
         )}
       </div>
 
-      {resultado.length === 0 ? (
+      {produtos.length === 0 ? (
+        <div className="rounded-3xl bg-white px-6 py-12 text-center">
+          <p className="text-lg font-semibold text-preto">Esta categoria ainda não tem produtos.</p>
+        </div>
+      ) : resultado.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-3xl bg-white px-6 py-12 text-center">
           <p className="text-lg font-semibold text-preto">Nenhum produto encontrado</p>
           <p className="text-sm text-preto/80">Tente outra busca ou remova os filtros aplicados.</p>

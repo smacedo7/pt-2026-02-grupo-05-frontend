@@ -4,8 +4,12 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/navbar/Navbar";
 import { buscarCategoriaPorSlug } from "@/lib/categorias/buscarCategoriaPorSlug";
-import { listarProdutosDaCategoria } from "@/lib/categorias/dados-demonstrativos";
+import {
+  LIMITE_PRODUTOS_CATEGORIA,
+  listarProdutosDaCategoria,
+} from "@/lib/categorias/listarProdutosDaCategoria";
 import type { Categoria } from "@/lib/categorias/tipos";
+import { mensagemFalhaProdutos } from "@/app/listarProdutos";
 import CatalogoCategoria from "./CatalogoCategoria";
 
 type Parametros = { params: Promise<{ slug: string }> };
@@ -58,17 +62,8 @@ async function ConteudoCategoria({ params }: Parametros) {
 
   if (resultado.tipo === "erro") {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-        <p role="alert" className="text-lg font-semibold">
-          Não foi possível carregar a categoria.
-        </p>
-        {/* Link comum: recarrega a página e consulta a API de novo. */}
-        <a
-          href={`/categorias/${slug}`}
-          className="rounded-full bg-roxo px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo"
-        >
-          Tentar novamente
-        </a>
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+        <AvisoDeErro slug={slug} mensagem="Não foi possível carregar a categoria." />
       </main>
     );
   }
@@ -82,7 +77,7 @@ async function ConteudoCategoria({ params }: Parametros) {
       nome: item.name,
     })),
   };
-  const produtos = await listarProdutosDaCategoria(categoria.slug);
+  const consulta = await listarProdutosDaCategoria(resultado.categoria);
 
   return (
     <>
@@ -109,8 +104,39 @@ async function ConteudoCategoria({ params }: Parametros) {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-10 md:py-12">
-        <CatalogoCategoria categoria={categoria} produtos={produtos} />
+        {consulta.tipo === "ok" ? (
+          <>
+            {consulta.limiteAtingido && (
+              <p className="mb-6 rounded-2xl bg-white px-4 py-3 text-sm text-preto">
+                Esta página exibe no máximo {LIMITE_PRODUTOS_CATEGORIA} produtos. A busca e a
+                ordenação consideram apenas os produtos exibidos.
+              </p>
+            )}
+            <CatalogoCategoria categoria={categoria} produtos={consulta.produtos} />
+          </>
+        ) : (
+          <div className="flex justify-center py-8">
+            <AvisoDeErro slug={categoria.slug} mensagem={mensagemFalhaProdutos(consulta.tipo)} />
+          </div>
+        )}
       </main>
     </>
+  );
+}
+
+function AvisoDeErro({ slug, mensagem }: { slug: string; mensagem: string }) {
+  return (
+    <div className="flex flex-col items-center gap-4 text-center">
+      <p role="alert" className="text-lg font-semibold">
+        {mensagem}
+      </p>
+      {/* Link comum: recarrega a página e consulta a API de novo. */}
+      <a
+        href={`/categorias/${slug}`}
+        className="rounded-full bg-roxo px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo"
+      >
+        Tentar novamente
+      </a>
+    </div>
   );
 }
