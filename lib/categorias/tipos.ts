@@ -5,6 +5,10 @@ export type CategoriaApi = {
   parentCategoryId: number | null;
 };
 
+export type CategoriaDetalheApi = CategoriaApi & {
+  subcategories: { id: number; name: string; slug: string }[];
+};
+
 export type Subcategoria = {
   slug: string;
   nome: string;
@@ -13,7 +17,7 @@ export type Subcategoria = {
 export type Categoria = {
   slug: string;
   nome: string;
-  chamada: string;
+  chamada?: string;
   subcategorias: Subcategoria[];
 };
 
