@@ -1,3 +1,10 @@
+export type CategoriaApi = {
+  id: number;
+  name: string;
+  slug: string;
+  parentCategoryId: number | null;
+};
+
 export type Subcategoria = {
   slug: string;
   nome: string;

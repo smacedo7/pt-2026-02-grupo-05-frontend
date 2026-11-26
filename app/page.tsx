@@ -7,8 +7,13 @@ import Navbar from '@/components/navbar/Navbar';
 import BarraBusca from '@/components/home/BarraBusca';
 import CarrosselCategorias from '@/components/home/CarrosselCategorias';
 import { ProductCard, ProductSkeleton } from '@/components/home/CardProdutoHome';
-import { CATEGORIAS_HOME, type CategoriaHome } from '@/components/home/categorias';
+import {
+  prepararCategoriasHome,
+  type CategoriaHome,
+  type EstadoListaCategorias,
+} from '@/components/home/categorias';
 import { correspondeBuscaPorNome, normalizarTextoBusca } from '@/lib/categorias/catalogo';
+import { listarCategoriasRaiz } from '@/lib/categorias/listarCategoriasRaiz';
 import { listarProdutos, type Produto } from './listarProdutos';
 
 type EstadoCategoria =
@@ -25,39 +30,61 @@ type SecaoCategoria = {
 const MENSAGEM_CONEXAO =
   'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
 const MENSAGEM_ERRO = 'Não foi possível carregar os produtos.';
+const MENSAGEM_ERRO_CATEGORIAS = 'Não foi possível carregar as categorias.';
 
 export default function Home() {
   const buscaRef = useRef<HTMLInputElement>(null);
   const produtosRef = useRef<HTMLElement>(null);
   const [textoBusca, setTextoBusca] = useState('');
-  const [estados, setEstados] = useState<Record<string, EstadoCategoria>>(() =>
-    Object.fromEntries(
-      CATEGORIAS_HOME.map((cat) => [cat.slug, { status: 'carregando' } as EstadoCategoria]),
-    ),
-  );
+  const [lista, setLista] = useState<EstadoListaCategorias>({ status: 'carregando' });
+  const [tentativa, setTentativa] = useState(0);
+  const [estados, setEstados] = useState<Record<string, EstadoCategoria>>({});
 
   useEffect(() => {
     let cancelado = false;
 
-    CATEGORIAS_HOME.forEach(async (cat) => {
-      const resultado = await listarProdutos(cat.slug);
+    async function carregar() {
+      const resposta = await listarCategoriasRaiz();
       if (cancelado) return;
-      setEstados((prev) => ({
-        ...prev,
-        [cat.slug]:
-          resultado.tipo === 'ok'
-            ? { status: 'ok', produtos: resultado.produtos }
-            : {
-                status: 'erro',
-                mensagem: resultado.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO,
-              },
-      }));
-    });
+
+      if (resposta.tipo !== 'ok') {
+        setLista({
+          status: 'erro',
+          mensagem: resposta.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO_CATEGORIAS,
+        });
+        return;
+      }
+
+      const categorias = prepararCategoriasHome(resposta.categorias);
+      setLista({ status: 'ok', categorias });
+
+      categorias.forEach(async (cat) => {
+        const resultado = await listarProdutos(cat.slug);
+        if (cancelado) return;
+        setEstados((prev) => ({
+          ...prev,
+          [cat.slug]:
+            resultado.tipo === 'ok'
+              ? { status: 'ok', produtos: resultado.produtos }
+              : {
+                  status: 'erro',
+                  mensagem: resultado.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO,
+                },
+        }));
+      });
+    }
+
+    carregar();
 
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [tentativa]);
+
+  const tentarNovamente = () => {
+    setLista({ status: 'carregando' });
+    setTentativa((anterior) => anterior + 1);
+  };
 
   const termoNormalizado = normalizarTextoBusca(textoBusca);
   const buscando = termoNormalizado !== '';
@@ -69,8 +96,9 @@ export default function Home() {
     let totalEncontrados = 0;
     let mensagemErroGeral = MENSAGEM_ERRO;
     const visiveis: SecaoCategoria[] = [];
+    const categorias = lista.status === 'ok' ? lista.categorias : [];
 
-    for (const categoria of CATEGORIAS_HOME) {
+    for (const categoria of categorias) {
       const estado = estados[categoria.slug] ?? { status: 'carregando' };
 
       if (estado.status === 'carregando') {
@@ -108,10 +136,12 @@ export default function Home() {
     const todasComErro = !carregando && totalOk === 0 && totalErros > 0;
     return {
       secoesVisiveis: visiveis,
-      semResultados: buscando && !carregando && !todasComErro && totalEncontrados === 0,
+      // Sem categorias carregadas não há o que buscar nem como afirmar que não há resultado.
+      semResultados:
+        buscando && categorias.length > 0 && !carregando && !todasComErro && totalEncontrados === 0,
       erroNaBusca: buscando && todasComErro ? mensagemErroGeral : null,
     };
-  }, [estados, buscando, termoNormalizado]);
+  }, [lista, estados, buscando, termoNormalizado]);
 
   const rolarParaResultados = () => {
     if (buscando) {
@@ -163,7 +193,7 @@ export default function Home() {
             inputRef={buscaRef}
           />
 
-          <CarrosselCategorias categorias={CATEGORIAS_HOME} />
+          <CarrosselCategorias lista={lista} aoTentarNovamente={tentarNovamente} />
 
           <section
             ref={produtosRef}
