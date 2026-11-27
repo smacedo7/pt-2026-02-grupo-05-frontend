@@ -89,9 +89,9 @@ export default function Navbar() {
 
           {estado === "logado" && (
             <>
-              <button type="button" disabled title="Em breve" aria-label="Perfil (em breve)" className={BOTAO_ICONE}>
+              <Link href="/perfil" aria-label="Perfil" title="Perfil" className={BOTAO_ICONE}>
                 <IconeUsuario />
-              </button>
+              </Link>
               <button
                 type="button"
                 onClick={encerrarSessao}
