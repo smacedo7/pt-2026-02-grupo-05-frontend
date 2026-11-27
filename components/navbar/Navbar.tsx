@@ -7,7 +7,7 @@ import { useSessao } from "./useSessao";
 
 const ICONE = "h-6 w-6 shrink-0";
 const BOTAO_ICONE =
-  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
+  "flex h-11 w-11 items-center justify-center rounded-full md:h-10 md:w-10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
 
 function IconeSacola() {
   return (
@@ -51,19 +51,19 @@ export default function Navbar() {
 
   return (
     <header className="bg-preto text-creme">
-      <nav aria-label="Principal" className="flex items-center justify-between gap-4 px-4 py-4 md:px-10">
-        <Link href="/" className="rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-roxo">
+      <nav aria-label="Principal" className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-3 py-2 md:flex-nowrap md:gap-4 md:px-10 md:py-4">
+        <Link href="/" className="flex min-h-11 shrink-0 items-center rounded md:min-h-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-roxo">
           {/* Logo em branco: o original é preto e ficaria invisível sobre a navbar preta. */}
           <Image
             src="/logo.png"
             alt="Stock.io"
             width={842}
             height={444}
-            className="h-10 w-auto brightness-0 invert md:h-12"
+            className="h-8 w-auto brightness-0 invert md:h-12"
           />
         </Link>
 
-        <div className="flex items-center gap-1 md:gap-3">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-0.5 md:gap-3">
           <button type="button" disabled title="Em breve" aria-label="Sacola de compras (em breve)" className={BOTAO_ICONE}>
             <IconeSacola />
           </button>
@@ -75,14 +75,14 @@ export default function Navbar() {
             <>
               <LinkNavbar
                 href="/login"
-                className="whitespace-nowrap rounded px-2 py-2 text-sm font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
+                className="flex min-h-11 items-center whitespace-nowrap rounded px-2 text-sm md:min-h-0 md:py-2 font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
                 classeAtiva="text-limao"
               >
                 LOGIN
               </LinkNavbar>
               <LinkNavbar
                 href="/cadastro"
-                className="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
+                className="flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-xs md:min-h-0 md:py-2 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
                 classeAtiva="bg-limao text-preto"
                 classeInativa="bg-roxo text-white hover:bg-[#5c2de0]"
               >
