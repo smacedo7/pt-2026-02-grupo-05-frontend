@@ -61,7 +61,9 @@ export function useSessao() {
 
   function encerrarSessao() {
     removerToken();
-    setEstado("deslogado");
+    // Carregamento completo de propósito: o Next.js mantém telas visitadas em
+    // memória, e router.replace deixaria nelas os dados de quem acabou de sair.
+    window.location.replace("/");
   }
 
   return { estado, encerrarSessao };

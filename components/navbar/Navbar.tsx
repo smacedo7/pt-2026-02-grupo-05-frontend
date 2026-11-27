@@ -97,7 +97,7 @@ export default function Navbar() {
                 onClick={encerrarSessao}
                 aria-label="Sair"
                 title="Sair"
-                className={BOTAO_ICONE}
+                className={`cursor-pointer ${BOTAO_ICONE}`}
               >
                 <IconeSair />
               </button>
