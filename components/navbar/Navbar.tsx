@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import LinkNavbar from "./LinkNavbar";
 import { useSessao } from "./useSessao";
 
 const ICONE = "h-6 w-6 shrink-0";
@@ -72,26 +73,29 @@ export default function Navbar() {
 
           {estado === "deslogado" && (
             <>
-              <Link
+              <LinkNavbar
                 href="/login"
                 className="whitespace-nowrap rounded px-2 py-2 text-sm font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
+                classeAtiva="text-limao"
               >
                 LOGIN
-              </Link>
-              <Link
+              </LinkNavbar>
+              <LinkNavbar
                 href="/cadastro"
-                className="whitespace-nowrap rounded-full bg-roxo px-3 py-2 text-xs font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
+                className="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
+                classeAtiva="bg-limao text-preto"
+                classeInativa="bg-roxo text-white hover:bg-[#5c2de0]"
               >
                 CADASTRE-SE
-              </Link>
+              </LinkNavbar>
             </>
           )}
 
           {estado === "logado" && (
             <>
-              <Link href="/perfil" aria-label="Perfil" title="Perfil" className={BOTAO_ICONE}>
+              <LinkNavbar href="/perfil" rotulo="Perfil" className={BOTAO_ICONE} classeAtiva="text-limao">
                 <IconeUsuario />
-              </Link>
+              </LinkNavbar>
               <button
                 type="button"
                 onClick={encerrarSessao}
