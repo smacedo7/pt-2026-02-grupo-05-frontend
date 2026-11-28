@@ -8,26 +8,36 @@ type Props = {
   aoEnviar: () => void;
   aoLimpar: () => void;
   inputRef: RefObject<HTMLInputElement | null>;
+  ariaLabel?: string;
+  className?: string;
 };
 
 const BOTAO_BARRA =
   'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#6a38ff]/70 transition-colors hover:text-[#6a38ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff]';
 
-/** Barra de pesquisa controlada da página inicial. */
-export default function BarraBusca({ valor, aoMudar, aoEnviar, aoLimpar, inputRef }: Props) {
+/** Barra de pesquisa controlada da página inicial e listagens. */
+export default function BarraBusca({
+  valor,
+  aoMudar,
+  aoEnviar,
+  aoLimpar,
+  inputRef,
+  ariaLabel = 'Buscar produtos',
+  className = 'mb-8 flex justify-end',
+}: Props) {
   return (
     <form
       role="search"
-      aria-label="Buscar produtos"
+      aria-label={ariaLabel}
       onSubmit={(e) => {
         e.preventDefault();
         aoEnviar();
       }}
-      className="mb-8 flex justify-end"
+      className={className}
     >
       <div className="flex w-full max-w-[500px] items-center rounded-full border border-gray-100 bg-white py-1.5 pl-5 pr-2 shadow-sm focus-within:ring-2 focus-within:ring-[#6a38ff]">
         <label htmlFor="busca" className="sr-only">
-          Buscar produtos
+          {ariaLabel}
         </label>
         <input
           id="busca"
