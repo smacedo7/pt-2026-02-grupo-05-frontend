@@ -17,15 +17,36 @@ type ProdutoBackend = {
   createdAt: string;
 };
 
-export async function buscarProdutos(limite = 10): Promise<ResultadoProdutos> {
+/**
+ * Produtos das lojas do usuário. GET /products filtra por uma loja de cada vez,
+ * então consulta cada loja e junta o resultado, em ordem de nome.
+ */
+export async function buscarProdutos(
+  usuarioId: number,
+  limite = 10,
+): Promise<ResultadoProdutos> {
   try {
-    const { data } = await api.get<ProdutoBackend[]>("/products", {
-      params: { limit: limite },
+    const { data: lojas } = await api.get<{ id: number }[]>("/stores", {
+      params: { userId: usuarioId, limit: 100 },
     });
-
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(lojas)) {
       return { tipo: "erro" };
     }
+
+    const listas = await Promise.all(
+      lojas.map((loja) =>
+        api.get<ProdutoBackend[]>("/products", {
+          params: { storeId: loja.id, limit: limite },
+        }),
+      ),
+    );
+    if (listas.some((resposta) => !Array.isArray(resposta.data))) {
+      return { tipo: "erro" };
+    }
+    const data = listas
+      .flatMap((resposta) => resposta.data)
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR") || a.id - b.id)
+      .slice(0, limite);
 
     const imagensResultados = await Promise.allSettled(
       data.map((item) => listarImagensProduto(item.id))

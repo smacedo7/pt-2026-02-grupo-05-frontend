@@ -74,7 +74,7 @@ export default function PerfilPage() {
     async function carregarProdutosELojas() {
       setCarregandoLojas(true);
       const [resultado, lojasUsuario] = await Promise.all([
-        buscarProdutos(10),
+        buscarProdutos(usuarioId),
         listarLojasUsuario(usuarioId),
       ]);
       if (cancelado) return;
