@@ -51,7 +51,8 @@ export default function Navbar() {
 
   return (
     <header className="bg-preto text-creme">
-      <nav aria-label="Principal" className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-3 py-2 md:flex-nowrap md:gap-4 md:px-10 md:py-4">
+      {/* Uma linha só a partir de 320px; a quebra fica para telas ainda mais estreitas. */}
+      <nav aria-label="Principal" className="flex flex-wrap items-center justify-between gap-1 px-2 py-2 min-[320px]:flex-nowrap min-[360px]:gap-x-2 min-[360px]:px-3 md:gap-4 md:px-10 md:py-4">
         <Link href="/" className="flex min-h-11 shrink-0 items-center rounded md:min-h-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-roxo">
           {/* Logo em branco: o original é preto e ficaria invisível sobre a navbar preta. */}
           <Image
@@ -63,7 +64,7 @@ export default function Navbar() {
           />
         </Link>
 
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-0.5 md:gap-3">
+        <div className="ml-auto flex flex-wrap items-center justify-end min-[320px]:flex-nowrap min-[360px]:gap-0.5 md:gap-3">
           <LinkNavbar href="/produtos" rotulo="Produtos" className={BOTAO_ICONE} classeAtiva="text-limao">
             <IconeSacola />
           </LinkNavbar>
@@ -75,14 +76,14 @@ export default function Navbar() {
             <>
               <LinkNavbar
                 href="/login"
-                className="flex min-h-11 items-center whitespace-nowrap rounded px-2 text-sm md:min-h-0 md:py-2 font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
+                className="flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap rounded px-0.5 text-sm min-[360px]:px-2 md:min-h-0 md:py-2 font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
                 classeAtiva="text-limao"
               >
                 LOGIN
               </LinkNavbar>
               <LinkNavbar
                 href="/cadastro"
-                className="flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-xs md:min-h-0 md:py-2 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
+                className="flex min-h-11 items-center whitespace-nowrap rounded-full px-2 text-xs min-[360px]:px-3 md:min-h-0 md:py-2 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
                 classeAtiva="bg-limao text-preto"
                 classeInativa="bg-roxo text-white hover:bg-[#5c2de0]"
               >
