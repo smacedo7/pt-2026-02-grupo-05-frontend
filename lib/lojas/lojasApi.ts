@@ -9,9 +9,11 @@ import {
 import type {
   AtualizarLojaPayload,
   CategoriaResumo,
+  CriarLojaPayload,
   Loja,
   ResultadoAtualizarLoja,
   ResultadoBuscarLoja,
+  ResultadoCriarLoja,
   ResultadoDeletarLoja,
 } from "./tipos";
 
@@ -37,11 +39,29 @@ export async function buscarLoja(id: number): Promise<ResultadoBuscarLoja> {
   }
 }
 
-export async function listarCategorias(): Promise<CategoriaResumo[]> {
+export async function listarLojasUsuario(userId: number): Promise<Loja[]> {
   try {
-    const { data } = await api.get<CategoriaResumo[]>("/categories");
+    const { data } = await api.get<Loja[]>("/stores", { params: { userId } });
     return Array.isArray(data) ? data : [];
   } catch {
+    return [];
+  }
+}
+
+export async function listarCategorias(opcoes?: {
+  root?: boolean;
+  parentCategoryId?: number;
+}): Promise<CategoriaResumo[]> {
+  try {
+    const params: Record<string, string | number | boolean> = {};
+    if (opcoes?.root !== undefined) params.root = opcoes.root;
+    if (opcoes?.parentCategoryId !== undefined) {
+      params.parentCategoryId = opcoes.parentCategoryId;
+    }
+    const { data } = await api.get<CategoriaResumo[]>("/categories", { params });
+    return Array.isArray(data) ? data : [];
+  } catch {
+    if (opcoes?.parentCategoryId !== undefined) return [];
     return [
       { id: 1, name: "Mercado", slug: "mercado" },
       { id: 2, name: "Farmácia", slug: "farmacia" },
@@ -52,6 +72,50 @@ export async function listarCategorias(): Promise<CategoriaResumo[]> {
       { id: 7, name: "Brinquedos", slug: "brinquedos" },
       { id: 8, name: "Casa", slug: "casa" },
     ];
+  }
+}
+
+export async function criarLoja(
+  payload: CriarLojaPayload
+): Promise<ResultadoCriarLoja> {
+  const token = obterTokenAutenticado();
+  if (!token) return { tipo: "nao-autorizado" };
+
+  try {
+    const { data } = await api.post<Loja>("/stores", payload, cabecalhoAuth(token));
+    if (!data || typeof data.id !== "number") {
+      return { tipo: "erro", mensagem: "Resposta do servidor inválida." };
+    }
+    return { tipo: "sucesso", loja: data };
+  } catch (erro) {
+    const c = classificarErroAxios(erro, {
+      erroPadrao: "Erro desconhecido ao criar a loja.",
+    });
+
+    if (c.tipo === "validacao") {
+      const { mensagemGeral, campos } = extrairErrosCampos<keyof CriarLojaPayload>(
+        c.data,
+        [
+          [["name", "nome"], "name"],
+          [["category"], "categoryId"],
+          [["description"], "description"],
+          [["logo"], "logoUrl"],
+          [["banner"], "bannerUrl"],
+          [["sticker"], "stickerUrl"],
+        ]
+      );
+      if (c.data?.code === "CATEGORY_NOT_FOUND") {
+        campos.categoryId = "A categoria selecionada não existe.";
+      }
+      return { tipo: "validacao", mensagem: mensagemGeral, campos };
+    }
+
+    if (c.tipo === "conflito") return { tipo: "conflito" };
+    if (c.tipo === "proibido") return { tipo: "erro", mensagem: c.mensagem };
+    if (c.tipo === "nao-encontrado") {
+      return { tipo: "erro", mensagem: "Categoria não encontrada." };
+    }
+    return c;
   }
 }
 
