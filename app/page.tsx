@@ -31,28 +31,24 @@ export default function Home() {
     <main className="flex min-h-screen flex-col overflow-x-hidden bg-[#fcf9f2] font-sans">
       <Navbar />
 
-      <section aria-label="Apresentação" className="relative w-full overflow-hidden bg-[#0b0b0b] pt-12">
-        <div className="relative mx-auto h-[320px] max-w-7xl px-6 md:h-[370px]">
-          <div className="absolute left-6 top-[37%] z-20 -translate-y-1/2 md:left-22">
-            <h1 className="flex flex-col font-sans text-3xl font-bold leading-[1] tracking-normal text-white md:text-[55px]">
-              <span className="md:whitespace-nowrap">Do CAOS à organização,</span>
-              <span className="md:ml-20 md:whitespace-nowrap lg:ml-[148px]">em alguns cliques</span>
-            </h1>
-          </div>
+      <section aria-label="Apresentação" className="w-full bg-[#0b0b0b]">
+        <div className="mx-auto flex h-[368px] max-w-7xl items-center justify-between gap-4 px-6 md:h-[418px]">
+          {/* A fonte acompanha a largura para as duas linhas nunca quebrarem. */}
+          <h1 className="flex w-fit flex-col pb-12 font-sans text-[clamp(1.375rem,7.2vw,1.875rem)] font-bold leading-none tracking-normal text-white md:items-end md:text-[clamp(1.875rem,4vw,3.4375rem)]">
+            <span className="whitespace-nowrap">Do CAOS à organização,</span>
+            <span className="whitespace-nowrap">em alguns cliques</span>
+          </h1>
 
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-11 right-5 z-0 hidden h-[750px] w-[500px] md:block md:h-[800px] md:w-[600px]"
-          >
-            <Image
-              src="/mascote-home.png"
-              alt=""
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
-              className="object-contain object-top"
-              priority
-            />
-          </div>
+          {/* Apoiado na base do banner; 460px de largura dão 405px de altura, que cabem nos 418px. */}
+          <Image
+            src="/mascote-home.png"
+            alt=""
+            width={832}
+            height={732}
+            sizes="(min-width: 1150px) 460px, 40vw"
+            className="hidden h-auto w-[40vw] max-w-[460px] shrink-0 self-end md:block"
+            priority
+          />
         </div>
       </section>
 
