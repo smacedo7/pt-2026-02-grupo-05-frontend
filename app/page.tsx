@@ -31,7 +31,7 @@ export default function Home() {
     <main className="flex min-h-screen flex-col overflow-x-hidden bg-[#fcf9f2] font-sans">
       <Navbar />
 
-      <section aria-label="Apresentação" className="w-full bg-[#0b0b0b]">
+      <section aria-label="Apresentação" className="w-full bg-preto">
         <div className="mx-auto flex h-[368px] max-w-7xl items-center justify-between gap-4 px-6 md:h-[418px]">
           {/* A fonte acompanha a largura para as duas linhas nunca quebrarem. */}
           <h1 className="flex w-fit flex-col pb-12 font-sans text-[clamp(1.375rem,7.2vw,1.875rem)] font-bold leading-none tracking-normal text-white md:items-end md:text-[clamp(1.875rem,4vw,3.4375rem)]">
