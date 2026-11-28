@@ -146,7 +146,7 @@ export default function LojasConteudo() {
 
       <section
         ref={listaRef}
-        aria-labelledby="titulo-lojas"
+        aria-labelledby="titulo-pagina-lojas"
         className="flex-1 bg-[#fcf9f2] pb-20 pt-8 scroll-mt-6"
       >
         <div className="mx-auto max-w-7xl px-6">
@@ -162,7 +162,7 @@ export default function LojasConteudo() {
 
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h1
-              id="titulo-lojas"
+              id="titulo-pagina-lojas"
               className="font-sans text-2xl font-bold text-black md:text-[32px]"
             >
               Lojas
