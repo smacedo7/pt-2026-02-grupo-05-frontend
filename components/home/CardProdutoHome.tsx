@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import type { ResumoLoja } from '@/lib/lojas/listarLojasPorId';
 import type { ProdutoApi } from '@/lib/produtos/tipos';
 
 const formatadorPreco = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -24,26 +29,23 @@ export function ProductSkeleton() {
   );
 }
 
-/** Card de produto exibido nas vitrines da página inicial. */
-export function ProductCard({
-  produto,
-  categoriaNome,
-}: {
-  produto: ProdutoApi;
-  categoriaNome: string;
-}) {
+/** Card de produto das vitrines (página inicial e página de produtos). */
+export function ProductCard({ produto, loja }: { produto: ProdutoApi; loja?: ResumoLoja }) {
+  const [logoFalhou, setLogoFalhou] = useState(false);
+  const logo = logoFalhou ? null : loja?.logoUrl;
   const precoFormatado = formatadorPreco.format(produto.price);
   const disponivel = produto.stock > 0;
-  const estoque = disponivel ? `${produto.stock} em estoque` : 'Indisponível';
+  const disponibilidade = disponivel ? 'Disponível' : 'Indisponível';
 
   const nomeAcessivel = [
     produto.name,
     precoFormatado,
-    estoque,
-    `categoria ${categoriaNome}`,
-    'loja não informada',
+    disponibilidade.toLowerCase(),
+    loja && `loja ${loja.name}`,
     'sem imagem',
-  ].join(', ');
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <Link
@@ -51,7 +53,7 @@ export function ProductCard({
       aria-label={nomeAcessivel}
       className="group relative flex h-full min-h-[260px] w-full cursor-pointer flex-col justify-between rounded-2xl bg-white p-4 text-left shadow-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
     >
-      {/* A listagem da API não envia imagens nem o nome da loja. */}
+      {/* A listagem da API não envia imagens do produto. */}
       <div
         aria-hidden="true"
         className="relative mb-4 flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-[#f8f9fa]"
@@ -59,12 +61,25 @@ export function ProductCard({
         <span className="text-sm text-gray-400">Sem imagem</span>
       </div>
 
+      {logo && (
+        <span className="absolute right-3 top-3 block h-12 w-12 overflow-hidden rounded-full bg-white shadow">
+          <Image
+            src={logo}
+            alt=""
+            fill
+            unoptimized
+            className="object-cover"
+            onError={() => setLogoFalhou(true)}
+          />
+        </span>
+      )}
+
       <div aria-hidden="true" className="mt-auto flex flex-col gap-1 px-1">
         <span className="line-clamp-2 min-h-[20px] break-words text-sm font-semibold leading-tight text-gray-800">
           {produto.name}
         </span>
-        <span className="text-xs text-gray-500">{categoriaNome}</span>
-        <span className="text-xs text-gray-500">Loja não informada</span>
+        {/* Sem logo cadastrado, o nome identifica a loja. */}
+        {loja && !logo && <span className="break-words text-xs text-gray-500">{loja.name}</span>}
 
         <span className="mt-1 text-sm font-bold text-black">{precoFormatado}</span>
 
@@ -73,7 +88,7 @@ export function ProductCard({
             disponivel ? 'text-[#a4cc15]' : 'text-[#e04a6e]'
           }`}
         >
-          {estoque}
+          {disponibilidade}
         </span>
       </div>
     </Link>

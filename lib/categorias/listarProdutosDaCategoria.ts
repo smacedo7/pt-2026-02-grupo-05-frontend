@@ -1,4 +1,5 @@
 import { listarProdutos, type FalhaProdutos } from "@/app/listarProdutos";
+import { listarLojasPorId } from "@/lib/lojas/listarLojasPorId";
 import type { CategoriaDetalheApi, Produto } from "./tipos";
 
 /** Máximo exibido na página de categoria; é também o maior `limit` aceito pela API. */
@@ -25,12 +26,15 @@ export async function listarProdutosDaCategoria(
     })),
   ];
 
-  const respostas = await Promise.all(
-    consultadas.map(async (consultada) => ({
-      consultada,
-      resposta: await listarProdutos(consultada.id, LIMITE_PRODUTOS_CATEGORIA),
-    })),
-  );
+  const [respostas, lojas] = await Promise.all([
+    Promise.all(
+      consultadas.map(async (consultada) => ({
+        consultada,
+        resposta: await listarProdutos(consultada.id, LIMITE_PRODUTOS_CATEGORIA),
+      })),
+    ),
+    listarLojasPorId(),
+  ]);
 
   const produtos: Produto[] = [];
   for (const { consultada, resposta } of respostas) {
@@ -43,9 +47,9 @@ export async function listarProdutosDaCategoria(
         preco: produto.price,
         estoque: produto.stock,
         disponivel: produto.stock > 0,
-        // A listagem da API não envia imagens nem o nome da loja.
+        // A listagem da API não envia imagens.
         imagemUrl: null,
-        lojaNome: null,
+        lojaNome: lojas.get(produto.storeId)?.name,
         categoriaNome: consultada.nome,
         categoriaSlug: categoria.slug,
         subcategoriaSlug: consultada.subcategoriaSlug,

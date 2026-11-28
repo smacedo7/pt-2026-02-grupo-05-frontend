@@ -40,6 +40,7 @@ export default function SecoesPorCategoria({ vitrine, variante = 'grade', ref }:
     carregandoProdutos,
     totalEncontrados,
     categoriasComErro,
+    lojas,
   } = vitrine;
 
   const fileira = variante === 'fileira';
@@ -135,7 +136,7 @@ export default function SecoesPorCategoria({ vitrine, variante = 'grade', ref }:
             {estado.status === 'ok' &&
               produtosFiltrados.slice(0, maximo).map((prod, index) => (
                 <div key={prod.id} className={classeItem(index)}>
-                  <ProductCard produto={prod} categoriaNome={categoria.nome} />
+                  <ProductCard produto={prod} loja={lojas.get(prod.storeId)} />
                 </div>
               ))}
           </div>

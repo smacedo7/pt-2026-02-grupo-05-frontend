@@ -41,9 +41,7 @@ export default function CardProduto({ produto }: Props) {
         </h3>
         <p className="text-sm font-medium text-preto">{formatadorPreco.format(produto.preco)}</p>
         {produto.categoriaNome && <p className="text-xs text-preto/80">{produto.categoriaNome}</p>}
-        {produto.lojaNome !== undefined && (
-          <p className="text-xs text-preto/80">{produto.lojaNome ?? "Loja não informada"}</p>
-        )}
+        {produto.lojaNome && <p className="text-xs text-preto/80">{produto.lojaNome}</p>}
         {produto.estoque !== undefined && produto.estoque > 0 && (
           <p className="text-xs text-preto/80">{produto.estoque} em estoque</p>
         )}

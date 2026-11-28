@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { listarProdutosDaCategoriaHome, mensagemFalhaProdutos } from '@/app/listarProdutos';
 import { correspondeBuscaPorNome, normalizarTextoBusca } from '@/lib/categorias/catalogo';
 import { listarCategoriasRaiz } from '@/lib/categorias/listarCategoriasRaiz';
+import { listarLojasPorId, type ResumoLoja } from '@/lib/lojas/listarLojasPorId';
 import type { ProdutoApi } from '@/lib/produtos/tipos';
 import { prepararCategoriasHome, type CategoriaHome, type EstadoListaCategorias } from './categorias';
 
@@ -30,6 +31,7 @@ export function useVitrine() {
   const [lista, setLista] = useState<EstadoListaCategorias>({ status: 'carregando' });
   const [tentativa, setTentativa] = useState(0);
   const [estados, setEstados] = useState<Record<string, EstadoCategoria>>({});
+  const [lojas, setLojas] = useState<Map<number, ResumoLoja>>(new Map());
 
   useEffect(() => {
     let cancelado = false;
@@ -63,6 +65,10 @@ export function useVitrine() {
     }
 
     carregar();
+    // Em paralelo: os produtos não esperam pelas lojas.
+    listarLojasPorId().then((resposta) => {
+      if (!cancelado) setLojas(resposta);
+    });
 
     return () => {
       cancelado = true;
@@ -143,6 +149,7 @@ export function useVitrine() {
     limparBusca,
     buscando,
     lista,
+    lojas,
     tentarNovamente,
     ...resultado,
   };
