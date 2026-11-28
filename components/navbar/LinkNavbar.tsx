@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,18 +13,29 @@ type Props = {
   children: React.ReactNode;
 };
 
-// Use apenas nos itens que aparecem depois da verificação da sessão: em rotas com
-// parâmetro dinâmico, usePathname na pré-renderização exigiria um <Suspense>.
-export default function LinkNavbar({
+// Em rotas com parâmetro dinâmico, usePathname suspende na pré-renderização. O
+// <Suspense> mostra o mesmo link, sem destaque, até a rota ser conhecida.
+export default function LinkNavbar(props: Props) {
+  return (
+    <Suspense fallback={<Item {...props} ativo={false} />}>
+      <ItemDaRota {...props} />
+    </Suspense>
+  );
+}
+
+function ItemDaRota(props: Props) {
+  return <Item {...props} ativo={usePathname() === props.href} />;
+}
+
+function Item({
   href,
   rotulo,
   className,
   classeAtiva,
   classeInativa = "",
   children,
-}: Props) {
-  const ativo = usePathname() === href;
-
+  ativo,
+}: Props & { ativo: boolean }) {
   return (
     <Link
       href={href}

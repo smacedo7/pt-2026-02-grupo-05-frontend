@@ -64,9 +64,9 @@ export default function Navbar() {
         </Link>
 
         <div className="ml-auto flex flex-wrap items-center justify-end gap-0.5 md:gap-3">
-          <button type="button" disabled title="Em breve" aria-label="Sacola de compras (em breve)" className={BOTAO_ICONE}>
+          <LinkNavbar href="/produtos" rotulo="Produtos" className={BOTAO_ICONE} classeAtiva="text-limao">
             <IconeSacola />
-          </button>
+          </LinkNavbar>
           <button type="button" disabled title="Em breve" aria-label="Lojas (em breve)" className={BOTAO_ICONE}>
             <IconeLoja />
           </button>
