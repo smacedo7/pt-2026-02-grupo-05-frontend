@@ -5,6 +5,8 @@ export type ResumoLoja = Pick<Loja, "id" | "name" | "logoUrl">;
 
 const LOJAS_POR_PAGINA = 100; // maior `limit` aceito por GET /stores
 const MAXIMO_DE_PAGINAS = 10;
+// Curto de propósito: a página de categoria espera esta consulta para ser montada.
+const TEMPO_LIMITE_MS = 3000;
 
 /**
  * Lojas indexadas pelo id, para os cards de produto: GET /products só envia o
@@ -17,7 +19,7 @@ export async function listarLojasPorId(): Promise<Map<number, ResumoLoja>> {
     for (let pagina = 0; pagina < MAXIMO_DE_PAGINAS; pagina++) {
       const { data } = await api.get<ResumoLoja[]>("/stores", {
         params: { limit: LOJAS_POR_PAGINA, offset: pagina * LOJAS_POR_PAGINA },
-        timeout: 10000,
+        timeout: TEMPO_LIMITE_MS,
       });
       if (!Array.isArray(data)) break;
       for (const loja of data) lojas.set(loja.id, loja);
