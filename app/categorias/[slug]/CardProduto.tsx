@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Produto } from "@/lib/categorias/tipos";
 
 const formatadorPreco = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -10,7 +11,7 @@ type Props = {
 
 export default function CardProduto({ produto }: Props) {
   return (
-    <article className="flex h-full flex-col gap-3 rounded-3xl bg-white p-4 shadow-sm">
+    <article className="relative flex h-full flex-col gap-3 rounded-3xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-roxo">
       {produto.imagemUrl ? (
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-creme">
           <Image
@@ -33,12 +34,15 @@ export default function CardProduto({ produto }: Props) {
       )}
 
       <div className="flex flex-1 flex-col gap-1">
-        <h3 className="break-words text-base font-semibold leading-tight text-preto md:text-lg">{produto.nome}</h3>
+        <h3 className="break-words text-base font-semibold leading-tight text-preto md:text-lg">
+          {/* O ::after estica o link para o card inteiro ser clicável. */}
+          <Link href={`/produtos/${produto.id}`} className="outline-none after:absolute after:inset-0 after:rounded-3xl">
+            {produto.nome}
+          </Link>
+        </h3>
         <p className="text-sm font-medium text-preto">{formatadorPreco.format(produto.preco)}</p>
         {produto.categoriaNome && <p className="text-xs text-preto/80">{produto.categoriaNome}</p>}
-        {produto.lojaNome !== undefined && (
-          <p className="text-xs text-preto/80">{produto.lojaNome ?? "Loja não informada"}</p>
-        )}
+        {produto.lojaNome && <p className="text-xs text-preto/80">{produto.lojaNome}</p>}
         {produto.estoque !== undefined && produto.estoque > 0 && (
           <p className="text-xs text-preto/80">{produto.estoque} em estoque</p>
         )}

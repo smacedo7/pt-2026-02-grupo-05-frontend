@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import LinkNavbar from "./LinkNavbar";
 import { useSessao } from "./useSessao";
 
 const ICONE = "h-6 w-6 shrink-0";
 const BOTAO_ICONE =
-  "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
+  "flex h-11 w-11 items-center justify-center rounded-full md:h-10 md:w-10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
 
 function IconeSacola() {
   return (
@@ -50,54 +51,58 @@ export default function Navbar() {
 
   return (
     <header className="bg-preto text-creme">
-      <nav aria-label="Principal" className="flex items-center justify-between gap-4 px-4 py-4 md:px-10">
-        <Link href="/" className="rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-roxo">
+      {/* Uma linha só a partir de 320px; a quebra fica para telas ainda mais estreitas. */}
+      <nav aria-label="Principal" className="flex flex-wrap items-center justify-between gap-1 px-2 py-2 min-[320px]:flex-nowrap min-[360px]:gap-x-2 min-[360px]:px-3 md:gap-4 md:px-10 md:py-4">
+        <Link href="/" className="flex min-h-11 shrink-0 items-center rounded md:min-h-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-roxo">
           {/* Logo em branco: o original é preto e ficaria invisível sobre a navbar preta. */}
           <Image
             src="/logo.png"
             alt="Stock.io"
             width={842}
             height={444}
-            className="h-10 w-auto brightness-0 invert md:h-12"
+            className="h-8 w-auto brightness-0 invert md:h-12"
           />
         </Link>
 
-        <div className="flex items-center gap-1 md:gap-3">
-          <button type="button" disabled title="Em breve" aria-label="Sacola de compras (em breve)" className={BOTAO_ICONE}>
+        <div className="ml-auto flex flex-wrap items-center justify-end min-[320px]:flex-nowrap min-[360px]:gap-0.5 md:gap-3">
+          <LinkNavbar href="/produtos" rotulo="Produtos" className={BOTAO_ICONE} classeAtiva="text-limao">
             <IconeSacola />
-          </button>
+          </LinkNavbar>
           <button type="button" disabled title="Em breve" aria-label="Lojas (em breve)" className={BOTAO_ICONE}>
             <IconeLoja />
           </button>
 
           {estado === "deslogado" && (
             <>
-              <Link
+              <LinkNavbar
                 href="/login"
-                className="whitespace-nowrap rounded px-2 py-2 text-sm font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
+                className="flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap rounded px-0.5 text-sm min-[360px]:px-2 md:min-h-0 md:py-2 font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-3"
+                classeAtiva="text-limao"
               >
                 LOGIN
-              </Link>
-              <Link
+              </LinkNavbar>
+              <LinkNavbar
                 href="/cadastro"
-                className="whitespace-nowrap rounded-full bg-roxo px-3 py-2 text-xs font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
+                className="flex min-h-11 items-center whitespace-nowrap rounded-full px-2 text-xs min-[360px]:px-3 md:min-h-0 md:py-2 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo md:px-4 md:text-sm"
+                classeAtiva="bg-limao text-preto"
+                classeInativa="bg-roxo text-white hover:bg-[#5c2de0]"
               >
                 CADASTRE-SE
-              </Link>
+              </LinkNavbar>
             </>
           )}
 
           {estado === "logado" && (
             <>
-              <button type="button" disabled title="Em breve" aria-label="Perfil (em breve)" className={BOTAO_ICONE}>
+              <LinkNavbar href="/perfil" rotulo="Perfil" className={BOTAO_ICONE} classeAtiva="text-limao">
                 <IconeUsuario />
-              </button>
+              </LinkNavbar>
               <button
                 type="button"
                 onClick={encerrarSessao}
                 aria-label="Sair"
                 title="Sair"
-                className={BOTAO_ICONE}
+                className={`cursor-pointer ${BOTAO_ICONE}`}
               >
                 <IconeSair />
               </button>

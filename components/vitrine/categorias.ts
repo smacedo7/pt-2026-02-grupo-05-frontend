@@ -1,6 +1,6 @@
 import type { CategoriaApi } from '@/lib/categorias/tipos';
 
-export type CategoriaHome = {
+export type CategoriaVitrine = {
   id: number;
   nome: string;
   slug: string;
@@ -9,10 +9,10 @@ export type CategoriaHome = {
 
 export type EstadoListaCategorias =
   | { status: 'carregando' }
-  | { status: 'ok'; categorias: CategoriaHome[] }
+  | { status: 'ok'; categorias: CategoriaVitrine[] }
   | { status: 'erro'; mensagem: string };
 
-// A API não guarda imagem de categoria: a home escolhe pelo slug.
+// A API não guarda imagem de categoria: a vitrine escolhe pelo slug.
 // A ordem desta lista é a ordem de exibição.
 const IMAGENS_POR_SLUG = new Map(
   ['mercado', 'farmacia', 'beleza', 'moda', 'eletronicos', 'jogos', 'brinquedos', 'casa'].map(
@@ -22,7 +22,7 @@ const IMAGENS_POR_SLUG = new Map(
 const ORDEM = [...IMAGENS_POR_SLUG.keys()];
 
 /** Ordena as categorias da API; as sem posição definida ficam no fim, na ordem recebida. */
-export function prepararCategoriasHome(categorias: CategoriaApi[]): CategoriaHome[] {
+export function prepararCategoriasVitrine(categorias: CategoriaApi[]): CategoriaVitrine[] {
   const posicao = (slug: string) => {
     const indice = ORDEM.indexOf(slug);
     return indice === -1 ? ORDEM.length : indice;
