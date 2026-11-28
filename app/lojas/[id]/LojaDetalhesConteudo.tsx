@@ -571,31 +571,25 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                 </div>
               ) : (
                 <>
-                  <div>
-                    <div className="flex items-baseline justify-between mb-6">
-                      <h2 className="text-2xl sm:text-3xl font-medium text-black">
-                        Produtos{" "}
-                        <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
-                          melhor avaliados
-                        </span>
-                      </h2>
-                      {produtos.length > 5 && (
-                        <a
-                          href="#todos-produtos-loja"
-                          className="text-sm font-medium text-[#6A38F3] hover:underline"
-                        >
-                          ver mais
-                        </a>
-                      )}
-                    </div>
-
-                    {produtosDestaque.length === 0 ? (
-                      <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
-                        <p className="text-sm font-medium text-black/70">
-                          Nenhum produto cadastrado para esta loja até o momento.
-                        </p>
+                  {produtos.length > 0 && (
+                    <div>
+                      <div className="flex items-baseline justify-between mb-6">
+                        <h2 className="text-2xl sm:text-3xl font-medium text-black">
+                          Produtos{" "}
+                          <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
+                            melhor avaliados
+                          </span>
+                        </h2>
+                        {produtos.length > 5 && (
+                          <a
+                            href="#todos-produtos-loja"
+                            className="text-sm font-medium text-[#6A38F3] hover:underline"
+                          >
+                            ver mais
+                          </a>
+                        )}
                       </div>
-                    ) : (
+
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                         {produtosDestaque.map((produto) => (
                           <CardProdutoLoja
@@ -606,8 +600,8 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                           />
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div id="todos-produtos-loja">
                     <div className="flex items-baseline justify-between mb-6">
