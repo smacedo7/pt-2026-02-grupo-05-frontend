@@ -466,44 +466,37 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
               </div>
 
               <div className="flex flex-col items-center text-center my-auto px-4">
-                {(loja.logoUrl || stickerValido) && (
-                  <div className="relative mb-4 flex items-center justify-center">
-                    {loja.logoUrl && (
-                      <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden border-2 border-[#F6F3E4]/80 shadow-xl bg-white/10 flex items-center justify-center">
-                        {logoValida ? (
-                          <Image
-                            src={loja.logoUrl}
-                            alt={`Logo da loja ${loja.name}`}
-                            fill
-                            unoptimized
-                            onError={() => setLogoComErro(loja.logoUrl)}
-                            className="object-cover"
-                          />
-                        ) : (
-                          <span aria-hidden="true" className="text-2xl font-bold text-[#F6F3E4]">
-                            {loja.name.trim().charAt(0).toUpperCase() || "L"}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {stickerValido && loja.stickerUrl && (
-                      <div
-                        className={`relative h-10 w-10 rounded-full bg-white p-1 shadow-md overflow-hidden ${
-                          loja.logoUrl ? "-ml-4 mt-12" : ""
-                        }`}
-                      >
-                        <Image
-                          src={loja.stickerUrl}
-                          alt="Selo da loja"
-                          fill
-                          unoptimized
-                          onError={() => setStickerComErro(loja.stickerUrl)}
-                          className="object-contain"
-                        />
-                      </div>
+                <div className="relative mb-4 flex items-center justify-center">
+                  {/* Sem logo, ou se ela falhar, a inicial identifica a loja, como em /lojas. */}
+                  <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden border-2 border-[#F6F3E4]/80 shadow-xl bg-white/10 flex items-center justify-center">
+                    {logoValida && loja.logoUrl ? (
+                      <Image
+                        src={loja.logoUrl}
+                        alt={`Logo da loja ${loja.name}`}
+                        fill
+                        unoptimized
+                        onError={() => setLogoComErro(loja.logoUrl)}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <span aria-hidden="true" className="text-2xl font-bold text-[#F6F3E4]">
+                        {loja.name.trim().charAt(0).toUpperCase() || "L"}
+                      </span>
                     )}
                   </div>
-                )}
+                  {stickerValido && loja.stickerUrl && (
+                    <div className="relative -ml-4 mt-12 h-10 w-10 rounded-full bg-white p-1 shadow-md overflow-hidden">
+                      <Image
+                        src={loja.stickerUrl}
+                        alt="Selo da loja"
+                        fill
+                        unoptimized
+                        onError={() => setStickerComErro(loja.stickerUrl)}
+                        className="object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <h1 className="w-full break-words text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#F6F3E4] drop-shadow-md">
                   {loja.name}
