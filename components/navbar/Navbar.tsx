@@ -7,7 +7,7 @@ import { useSessao } from "./useSessao";
 
 const ICONE = "h-6 w-6 shrink-0";
 const BOTAO_ICONE =
-  "flex h-11 w-11 items-center justify-center rounded-full md:h-10 md:w-10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
+  "flex h-11 w-11 items-center justify-center rounded-full md:h-10 md:w-10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo";
 
 function IconeSacola() {
   return (
@@ -20,10 +20,10 @@ function IconeSacola() {
 
 function IconeLoja() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={ICONE}>
-      <path d="M4 9l1.5-5h13L20 9" strokeLinejoin="round" />
-      <path d="M4 9h16v11H4z" strokeLinejoin="round" />
-      <path d="M9 20v-6h6v6" strokeLinejoin="round" />
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className={ICONE}>
+      {/* Toldo cheio com três frestas (evenodd) sobre a parede e o balcão. */}
+      <path fillRule="evenodd" d="M5 3h14l2 4.5V13H3V7.5L5 3Zm2 6v2.5h2V9H7Zm4 0v2.5h2V9h-2Zm4 0v2.5h2V9h-2Z" />
+      <path d="M4 13h1.75v8H4v-8Zm4 0h1.75v6.25h8.5V13H20v8H8v-8Z" />
     </svg>
   );
 }
@@ -68,9 +68,9 @@ export default function Navbar() {
           <LinkNavbar href="/produtos" rotulo="Produtos" className={BOTAO_ICONE} classeAtiva="text-limao">
             <IconeSacola />
           </LinkNavbar>
-          <button type="button" disabled title="Em breve" aria-label="Lojas (em breve)" className={BOTAO_ICONE}>
+          <LinkNavbar href="/lojas" rotulo="Lojas" className={BOTAO_ICONE} classeAtiva="text-limao">
             <IconeLoja />
-          </button>
+          </LinkNavbar>
 
           {estado === "deslogado" && (
             <>
