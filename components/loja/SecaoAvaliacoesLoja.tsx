@@ -183,6 +183,9 @@ export default function SecaoAvaliacoesLoja({
   const [rascunhos, setRascunhos] = useState<Record<number, string>>({});
   const [enviandoId, setEnviandoId] = useState<number | null>(null);
 
+  // O dono responde às avaliações, mas não avalia a própria loja (a API recusa).
+  const ehDonoDaLoja = usuarioLogadoId === donoLojaId;
+
   const minhaAvaliacao = usuarioLogadoId
     ? avaliacoes.find((a) => a.userId === usuarioLogadoId) ?? null
     : null;
@@ -220,28 +223,30 @@ export default function SecaoAvaliacoesLoja({
           <EstrelasExibicao nota={mediaAvaliacoes ?? 0} />
         </div>
 
-        <div className="mt-6 w-full max-w-md flex justify-center">
-          {usuarioLogadoId ? (
-            <button
-              type="button"
-              onClick={() =>
-                minhaAvaliacao
-                  ? aoEditarAvaliacao(minhaAvaliacao)
-                  : aoAdicionarAvaliacao()
-              }
-              className="w-full rounded-full bg-[#6A38F3] hover:bg-[#5c2de0] px-8 py-2.5 text-base sm:text-lg font-normal text-white shadow-md transition-colors cursor-pointer"
-            >
-              {minhaAvaliacao ? "Editar minha Review" : "Adicionar Review"}
-            </button>
-          ) : (
-            <Link
-              href="/login"
-              className="w-full text-center rounded-full bg-[#6A38F3] hover:bg-[#5c2de0] px-8 py-2.5 text-base sm:text-lg font-normal text-white shadow-md transition-colors"
-            >
-              Adicionar Review
-            </Link>
-          )}
-        </div>
+        {!ehDonoDaLoja && (
+          <div className="mt-6 w-full max-w-md flex justify-center">
+            {usuarioLogadoId ? (
+              <button
+                type="button"
+                onClick={() =>
+                  minhaAvaliacao
+                    ? aoEditarAvaliacao(minhaAvaliacao)
+                    : aoAdicionarAvaliacao()
+                }
+                className="w-full rounded-full bg-[#6A38F3] hover:bg-[#5c2de0] px-8 py-2.5 text-base sm:text-lg font-normal text-white shadow-md transition-colors cursor-pointer"
+              >
+                {minhaAvaliacao ? "Editar minha Review" : "Adicionar Review"}
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="w-full text-center rounded-full bg-[#6A38F3] hover:bg-[#5c2de0] px-8 py-2.5 text-base sm:text-lg font-normal text-white shadow-md transition-colors"
+              >
+                Adicionar Review
+              </Link>
+            )}
+          </div>
+        )}
 
         {avaliacoes.length === 0 ? (
           <div className="mt-10 w-full rounded-[28px] bg-[#F6F3E4] px-6 py-10 text-center text-black shadow-md">
