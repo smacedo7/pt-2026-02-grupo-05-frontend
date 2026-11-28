@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import Navbar from "@/components/navbar/Navbar";
 import { buscarProdutoPorId } from "@/lib/produtos/buscarProdutoPorId";
 import GaleriaProduto from "./GaleriaProduto";
 import OutrosDaLoja from "./OutrosDaLoja";
+import ProdutoNaoEncontrado from "./ProdutoNaoEncontrado";
 
 type Parametros = { params: Promise<{ id: string }> };
 
@@ -24,9 +24,10 @@ export async function generateMetadata({ params }: Parametros): Promise<Metadata
   if (resultado.tipo === "ok") {
     return { title: `${resultado.produto.name} | Stock.io` };
   }
-  return {
-    title: resultado.tipo === "nao-encontrado" ? "Produto não encontrado | Stock.io" : "Produto | Stock.io",
-  };
+  if (resultado.tipo === "nao-encontrado") {
+    return { title: "Produto não encontrado | Stock.io", robots: { index: false } };
+  }
+  return { title: "Produto | Stock.io" };
 }
 
 export default function PaginaProduto({ params }: Parametros) {
@@ -50,8 +51,10 @@ async function ConteudoProduto({ params }: Parametros) {
   const { id } = await params;
   const resultado = await buscarProduto(id);
 
+  // Sem notFound(): a resposta já começou a ser enviada (o status continua 200) e,
+  // disparado nesse ponto, ele causava o erro #419 do React em parte das cargas.
   if (resultado.tipo === "nao-encontrado") {
-    notFound();
+    return <ProdutoNaoEncontrado />;
   }
 
   if (resultado.tipo !== "ok") {
