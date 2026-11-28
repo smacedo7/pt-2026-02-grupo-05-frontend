@@ -65,8 +65,12 @@ export default function SecoesPorCategoria({ vitrine, variante = 'grade', ref }:
             {totalEncontrados === 1
               ? '1 produto encontrado'
               : `${totalEncontrados} produtos encontrados`}
-            {categoriasComErro > 0 &&
-              '. Algumas categorias não carregaram e ficaram fora da busca.'}
+          </p>
+        )}
+        {/* Vale também sem resultado: o produto pode estar na categoria que falhou. */}
+        {fileira && buscando && !carregandoProdutos && !erroNaBusca && categoriasComErro > 0 && (
+          <p className="text-center text-sm text-gray-700">
+            Algumas categorias não carregaram e ficaram fora da busca.
           </p>
         )}
         {semResultados && (
