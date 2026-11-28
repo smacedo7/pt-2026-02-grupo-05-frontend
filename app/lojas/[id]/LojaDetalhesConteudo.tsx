@@ -38,6 +38,32 @@ const LIMITE_PRODUTOS = 50; // o padrão de GET /products
 const CLASSE_BOTAO_DONO =
   "inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer";
 
+function BotaoAdicionarProduto({ aoClicar }: { aoClicar: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={aoClicar}
+      aria-label="Adicionar produto"
+      title="Adicionar produto"
+      className={CLASSE_BOTAO_DONO}
+    >
+      <svg
+        className="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      <span>Adicionar Produto</span>
+    </button>
+  );
+}
+
 function AcoesDonoLoja({
   aoEditarLoja,
   aoAdicionarProduto,
@@ -68,27 +94,7 @@ function AcoesDonoLoja({
         <span>Editar Loja</span>
       </button>
 
-      <button
-        type="button"
-        onClick={aoAdicionarProduto}
-        aria-label="Adicionar produto"
-        title="Adicionar produto"
-        className={CLASSE_BOTAO_DONO}
-      >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.4}
-          strokeLinecap="round"
-          aria-hidden="true"
-        >
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        <span>Adicionar Produto</span>
-      </button>
+      <BotaoAdicionarProduto aoClicar={aoAdicionarProduto} />
     </div>
   );
 }
@@ -623,27 +629,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                         </p>
                         {ehDono && (
                           <div className="mt-4 flex justify-center">
-                            <button
-                              type="button"
-                              onClick={() => setModalCriarProdutoAberto(true)}
-                              aria-label="Adicionar produto"
-                              title="Adicionar produto"
-                              className={CLASSE_BOTAO_DONO}
-                            >
-                              <svg
-                                className="h-4 w-4"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2.4}
-                                strokeLinecap="round"
-                                aria-hidden="true"
-                              >
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                              </svg>
-                              <span>Adicionar Produto</span>
-                            </button>
+                            <BotaoAdicionarProduto aoClicar={() => setModalCriarProdutoAberto(true)} />
                           </div>
                         )}
                       </div>
