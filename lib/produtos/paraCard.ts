@@ -9,8 +9,8 @@ export function produtoParaCard(produto: ProdutoApi): Produto {
     preco: produto.price,
     estoque: produto.stock,
     disponivel: produto.stock > 0,
-    // A listagem da API não envia imagens.
-    imagemUrl: null,
+    // A API envia imageUrl com a imagem principal do produto (ou null).
+    imagemUrl: produto.imageUrl ?? null,
     categoriaSlug: "",
     subcategoriaSlug: "",
     criadoEm: produto.createdAt,

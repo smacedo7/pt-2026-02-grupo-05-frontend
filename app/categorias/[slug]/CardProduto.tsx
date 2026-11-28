@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Produto } from "@/lib/categorias/tipos";
@@ -10,17 +13,22 @@ type Props = {
 };
 
 export default function CardProduto({ produto }: Props) {
+  const [imagemComErro, setImagemComErro] = useState<string | null>(null);
+  const imagem =
+    produto.imagemUrl && imagemComErro !== produto.imagemUrl ? produto.imagemUrl : null;
+
   return (
     <article className="relative flex h-full flex-col gap-3 rounded-3xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-roxo">
-      {produto.imagemUrl ? (
+      {imagem ? (
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-creme">
           <Image
-            src={produto.imagemUrl}
+            src={imagem}
             alt={`Foto do produto ${produto.nome}`}
             fill
             unoptimized
             sizes="(min-width: 1280px) 220px, (min-width: 768px) 33vw, (min-width: 360px) 50vw, 100vw"
             className="object-contain p-2"
+            onError={() => setImagemComErro(imagem)}
           />
         </div>
       ) : (

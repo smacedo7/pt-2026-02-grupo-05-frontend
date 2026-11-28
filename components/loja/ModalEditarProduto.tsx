@@ -246,7 +246,8 @@ function ModalEditarProdutoDialog({
           imagens={imagens}
           novaUrlImagem={novaUrlImagem}
           erro={erros.images}
-          ocupado={ocupado}
+          // As fotos chegam depois de abrir; até lá, mexer nelas seria sobrescrito.
+          ocupado={ocupado || carregandoCategorias}
           onChangeNovaUrl={(val) => {
             setNovaUrlImagem(val);
             if (erros.images) setErros((prev) => ({ ...prev, images: "" }));
@@ -389,7 +390,7 @@ function ModalEditarProdutoDialog({
           <div className="flex justify-center pt-1">
             <button
               type="submit"
-              disabled={ocupado}
+              disabled={ocupado || carregandoCategorias}
               className="w-full sm:w-[373px] rounded-full bg-[#6A38F3] hover:bg-[#5c2de0] py-3 text-lg font-normal text-white shadow-md transition-colors focus-visible:outline-2 focus-visible:outline-[#6A38F3] disabled:opacity-50 cursor-pointer"
             >
               {salvando ? "Salvando..." : "Salvar"}

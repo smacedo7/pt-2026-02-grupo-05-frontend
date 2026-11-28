@@ -4,7 +4,7 @@ export type ProdutoImagem = {
   sortOrder: number;
 };
 
-/** Espelho do ProductResponseDto do backend: é o que GET /products devolve. */
+/** Espelho do ProductListItemDto do backend: é o que GET /products devolve. */
 export type ProdutoApi = {
   id: number;
   storeId: number;
@@ -13,13 +13,15 @@ export type ProdutoApi = {
   description: string | null;
   price: number;
   stock: number;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 /**
  * Espelho do ProductDetailResponseDto, devolvido por GET /products/:id.
- * Loja, categoria e imagens só existem aqui; a listagem não as envia.
+ * Loja, categoria e a lista de imagens só existem aqui; a listagem envia apenas
+ * a imagem principal, em imageUrl.
  */
 export type ProdutoDetalheApi = ProdutoApi & {
   store: { id: number; name: string };

@@ -1,19 +1,19 @@
 import axios from "axios";
 import { api } from "@/lib/api";
 import type { Produto } from "@/lib/categorias/tipos";
-import { listarImagensProduto } from "@/lib/produtos/produtosApi";
 
 export type ResultadoProdutos =
   | { tipo: "ok"; produtos: Produto[] }
   | { tipo: "conexao" }
   | { tipo: "erro" };
 
-// Espelho do ProductResponseDto do backend
+// Espelho do ProductListItemDto do backend
 type ProdutoBackend = {
   id: number;
   name: string;
   price: number;
   stock: number;
+  imageUrl?: string | null;
   createdAt: string;
 };
 
@@ -48,27 +48,17 @@ export async function buscarProdutos(
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR") || a.id - b.id)
       .slice(0, limite);
 
-    const imagensResultados = await Promise.allSettled(
-      data.map((item) => listarImagensProduto(item.id))
-    );
-
     // Mapeia o DTO do backend para o tipo Produto do CardProduto
-    const produtosMapeados: Produto[] = data.map((item, idx) => {
-      const resImg = imagensResultados[idx];
-      const primeiraImagem =
-        resImg?.status === "fulfilled" ? (resImg.value[0]?.imageUrl ?? null) : null;
-
-      return {
-        id: String(item.id),
-        nome: item.name,
-        preco: item.price,
-        disponivel: item.stock > 0,
-        imagemUrl: primeiraImagem,
-        categoriaSlug: "",
-        subcategoriaSlug: "",
-        criadoEm: item.createdAt,
-      };
-    });
+    const produtosMapeados: Produto[] = data.map((item) => ({
+      id: String(item.id),
+      nome: item.name,
+      preco: item.price,
+      disponivel: item.stock > 0,
+      imagemUrl: item.imageUrl ?? null,
+      categoriaSlug: "",
+      subcategoriaSlug: "",
+      criadoEm: item.createdAt,
+    }));
 
     return { tipo: "ok", produtos: produtosMapeados };
   } catch (erro) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ProdutoLoja } from "@/lib/produtos/tipos";
@@ -17,7 +17,13 @@ type Props = {
 };
 
 export default function CardProdutoLoja({ produto, ehDono, aoEditar }: Props) {
-  const primeiraImagem = produto.images?.[0]?.imageUrl ?? null;
+  const [imagemComErro, setImagemComErro] = useState<string | null>(null);
+  // A listagem envia só imageUrl; depois de criar ou editar, o produto vem do
+  // detalhe, que envia a lista images.
+  const principal = produto.images
+    ? (produto.images[0]?.imageUrl ?? null)
+    : (produto.imageUrl ?? null);
+  const imagem = principal !== imagemComErro ? principal : null;
   const disponivel = produto.stock > 0;
 
   return (
@@ -44,14 +50,15 @@ export default function CardProdutoLoja({ produto, ehDono, aoEditar }: Props) {
         </button>
       )}
 
-      {primeiraImagem ? (
+      {imagem ? (
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#F6F3E4]">
           <Image
-            src={primeiraImagem}
+            src={imagem}
             alt={`Foto do produto ${produto.name}`}
             fill
             unoptimized
             className="object-contain p-2"
+            onError={() => setImagemComErro(imagem)}
           />
         </div>
       ) : (
