@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { ProductCard, ProductSkeleton } from './CardProdutoHome';
 import type { useVitrine } from './useVitrine';
 
-const MAXIMO_POR_SECAO = 5;
+const MAXIMO_NA_GRADE = 5;
+const MAXIMO_NA_FILEIRA = 10;
 
 type Props = {
   vitrine: ReturnType<typeof useVitrine>;
+  /** "grade": até cinco cards (Home). "fileira": rolagem horizontal (página de produtos). */
+  variante?: 'grade' | 'fileira';
   ref?: RefObject<HTMLElement | null>;
 };
 
@@ -25,9 +28,26 @@ function BotaoTentarNovamente({ aoClicar }: { aoClicar: () => void }) {
 }
 
 /** Uma seção de produtos para cada categoria raiz, com o link "ver mais". */
-export default function SecoesPorCategoria({ vitrine, ref }: Props) {
-  const { textoBusca, limparBusca, tentarNovamente, secoesVisiveis, semResultados, erroNaBusca } =
-    vitrine;
+export default function SecoesPorCategoria({ vitrine, variante = 'grade', ref }: Props) {
+  const {
+    textoBusca,
+    buscando,
+    limparBusca,
+    tentarNovamente,
+    secoesVisiveis,
+    semResultados,
+    erroNaBusca,
+  } = vitrine;
+
+  const fileira = variante === 'fileira';
+  // Na fileira, a busca mostra tudo o que encontrou, quebrando em linhas.
+  const maximo = !fileira ? MAXIMO_NA_GRADE : buscando ? Infinity : MAXIMO_NA_FILEIRA;
+  const classeLista = !fileira
+    ? 'grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5'
+    : `-m-1 flex gap-4 p-1 pb-4 lg:gap-8 ${buscando ? 'flex-wrap' : 'overflow-x-auto'}`;
+  // Na grade de duas colunas do celular, o quinto card ficaria sozinho.
+  const classeItem = (indice: number) =>
+    fileira ? 'w-44 shrink-0 sm:w-[228px]' : indice >= 4 ? 'hidden md:block' : '';
 
   return (
     <section
@@ -77,19 +97,16 @@ export default function SecoesPorCategoria({ vitrine, ref }: Props) {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
+          <div className={classeLista}>
             {estado.status === 'carregando' &&
-              Array.from({ length: MAXIMO_POR_SECAO }).map((_, index) => (
-                <div
-                  key={`skeleton-${categoria.slug}-${index}`}
-                  className={index >= 4 ? 'hidden md:block' : ''}
-                >
+              Array.from({ length: MAXIMO_NA_GRADE }).map((_, index) => (
+                <div key={`skeleton-${categoria.slug}-${index}`} className={classeItem(index)}>
                   <ProductSkeleton />
                 </div>
               ))}
 
             {estado.status === 'erro' && (
-              <div className="col-span-full flex flex-col items-center gap-3 text-center">
+              <div className="col-span-full flex w-full flex-col items-center gap-3 text-center">
                 <p role="alert" className="text-sm text-red-500">
                   {estado.mensagem}
                 </p>
@@ -98,14 +115,14 @@ export default function SecoesPorCategoria({ vitrine, ref }: Props) {
             )}
 
             {estado.status === 'ok' && estado.produtos.length === 0 && (
-              <p className="col-span-full text-center text-sm text-gray-500">
+              <p className="col-span-full w-full text-center text-sm text-gray-500">
                 Nenhum produto disponível.
               </p>
             )}
 
             {estado.status === 'ok' &&
-              produtosFiltrados.slice(0, MAXIMO_POR_SECAO).map((prod, index) => (
-                <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
+              produtosFiltrados.slice(0, maximo).map((prod, index) => (
+                <div key={prod.id} className={classeItem(index)}>
                   <ProductCard produto={prod} categoriaNome={categoria.nome} />
                 </div>
               ))}
