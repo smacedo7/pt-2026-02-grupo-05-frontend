@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import Navbar from "@/components/navbar/Navbar";
 import CardProduto from "@/app/categorias/[slug]/CardProduto";
+import ModalCriarLoja from "@/components/loja/ModalCriarLoja";
+import { listarLojasUsuario } from "@/lib/lojas/lojasApi";
+import type { Loja } from "@/lib/lojas/tipos";
 import type { Produto } from "@/lib/categorias/tipos";
 import { buscarPerfil, type UsuarioPerfil } from "./buscarPerfil";
 import { buscarProdutos } from "./buscarProdutos";
@@ -29,6 +34,9 @@ export default function PerfilPage() {
   const [estadoProdutos, setEstadoProdutos] = useState<EstadoProdutos>({
     status: "carregando",
   });
+  const [lojas, setLojas] = useState<Loja[]>([]);
+  const [carregandoLojas, setCarregandoLojas] = useState(false);
+  const [modalCriarLojaAberto, setModalCriarLojaAberto] = useState(false);
 
   // Perfil
   useEffect(() => {
@@ -57,14 +65,22 @@ export default function PerfilPage() {
     };
   }, [router]);
 
-  // Produtos (só busca depois que o perfil carregar)
+  // Produtos e lojas (só busca depois que o perfil carregar)
   useEffect(() => {
     if (estado.status !== "ok") return;
+    const usuarioId = estado.usuario.id;
     let cancelado = false;
 
-    async function carregarProdutos() {
-      const resultado = await buscarProdutos(10);
+    async function carregarProdutosELojas() {
+      setCarregandoLojas(true);
+      const [resultado, lojasUsuario] = await Promise.all([
+        buscarProdutos(10),
+        listarLojasUsuario(usuarioId),
+      ]);
       if (cancelado) return;
+
+      setLojas(lojasUsuario);
+      setCarregandoLojas(false);
 
       if (resultado.tipo === "ok") {
         setEstadoProdutos({ status: "ok", produtos: resultado.produtos });
@@ -77,7 +93,7 @@ export default function PerfilPage() {
       }
     }
 
-    carregarProdutos();
+    carregarProdutosELojas();
     return () => {
       cancelado = true;
     };
@@ -93,7 +109,7 @@ export default function PerfilPage() {
   const inicial = usuario ? usuario.name.charAt(0).toUpperCase() : "";
 
   return (
-    <div className="min-h-screen bg-creme pb-12">
+    <div className="min-h-screen bg-creme text-preto pb-12">
       <a
         href="#conteudo-perfil"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-black focus:outline-none focus:ring-2 focus:ring-[#6D3BFF]"
@@ -172,7 +188,7 @@ export default function PerfilPage() {
 
                 <h1
                   id="nome-usuario"
-                  className="mt-3 break-words text-3xl font-bold sm:text-5xl lg:leading-none"
+                  className="mt-3 break-words text-3xl font-bold text-preto sm:text-5xl lg:leading-none"
                 >
                   {usuario.name}
                 </h1>
@@ -214,7 +230,7 @@ export default function PerfilPage() {
               <div className="flex items-baseline justify-between">
                 <h2
                   id="titulo-produtos"
-                  className="text-2xl font-bold sm:text-3xl lg:text-[32px] lg:leading-none"
+                  className="text-2xl font-bold text-preto sm:text-3xl lg:text-[32px] lg:leading-none"
                 >
                   Produtos
                 </h2>
@@ -265,6 +281,106 @@ export default function PerfilPage() {
                 </div>
               )}
             </section>
+
+            <section className="mt-10 lg:mt-16" aria-labelledby="titulo-lojas">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <h2
+                    id="titulo-lojas"
+                    className="text-2xl font-bold text-preto sm:text-3xl lg:text-[32px] lg:leading-none"
+                  >
+                    Lojas
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setModalCriarLojaAberto(true)}
+                    aria-label="Adicionar loja"
+                    title="Adicionar loja"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#6D3BFF] text-white shadow-md hover:bg-[#5a2ee0] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D3BFF] focus-visible:ring-offset-2 cursor-pointer"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {carregandoLojas ? (
+                <p className="mt-4 text-gray-600">Carregando lojas...</p>
+              ) : lojas.length === 0 ? (
+                <p className="mt-4 text-gray-600">
+                  Você ainda não possui lojas cadastradas. Clique no botão + para criar uma!
+                </p>
+              ) : (
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {lojas.map((loja) => (
+                    <Link
+                      key={loja.id}
+                      href={`/lojas/${loja.id}`}
+                      className="group overflow-hidden rounded-3xl bg-white shadow-sm border border-black/5 hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col"
+                    >
+                      <div className="relative h-28 w-full bg-[#171a17]">
+                        {loja.bannerUrl ? (
+                          <Image
+                            src={loja.bannerUrl}
+                            alt={`Banner da loja ${loja.name}`}
+                            fill
+                            unoptimized
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full bg-radial from-[#2a1a4a] to-[#0d0d0d]" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 p-4">
+                        <div className="relative h-12 w-12 shrink-0 rounded-full overflow-hidden bg-[#F6F3E4] border border-black/10 flex items-center justify-center text-lg font-bold text-[#6D3BFF]">
+                          {loja.logoUrl ? (
+                            <Image
+                              src={loja.logoUrl}
+                              alt={`Logo de ${loja.name}`}
+                              fill
+                              unoptimized
+                              className="object-cover"
+                            />
+                          ) : (
+                            <span>{loja.name.charAt(0).toUpperCase()}</span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-semibold text-[#171a17] group-hover:text-[#6D3BFF] transition-colors">
+                            {loja.name}
+                          </h3>
+                          {loja.category?.name && (
+                            <p className="truncate text-xs lowercase text-gray-500">
+                              {loja.category.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <ModalCriarLoja
+              aberto={modalCriarLojaAberto}
+              aoFechar={() => setModalCriarLojaAberto(false)}
+              aoCriar={(novaLoja) => {
+                setLojas((prev) => [novaLoja, ...prev]);
+                toast.success(`Loja "${novaLoja.name}" criada com sucesso!`);
+                router.push(`/lojas/${novaLoja.id}`);
+              }}
+            />
           </>
         )}
       </main>
