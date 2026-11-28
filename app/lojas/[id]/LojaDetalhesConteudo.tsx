@@ -25,7 +25,6 @@ import type {
 } from "@/lib/avaliacoes/tipos";
 import { buscarLoja, obterTokenAutenticado } from "@/lib/lojas/lojasApi";
 import type { Loja } from "@/lib/lojas/tipos";
-import { listarImagensProduto } from "@/lib/produtos/produtosApi";
 import type { ProdutoLoja } from "@/lib/produtos/tipos";
 import { api } from "@/lib/api";
 
@@ -104,25 +103,13 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
         setLoja(resLoja.loja);
         setAvaliacoes(avaliacoesRes.ratings);
 
-        // Carrega imagens dos produtos e comentários das avaliações em paralelo
-        const [imagensResultados, comentariosResultados] = await Promise.all([
-          Promise.allSettled(
-            produtosRes.map((p) => listarImagensProduto(p.id))
-          ),
-          Promise.allSettled(
-            avaliacoesRes.ratings.map((r) => listarComentariosAvaliacaoLoja(r.id))
-          ),
-        ]);
+        // Os produtos já trazem a imagem principal (imageUrl) na listagem.
+        const comentariosResultados = await Promise.allSettled(
+          avaliacoesRes.ratings.map((r) => listarComentariosAvaliacaoLoja(r.id))
+        );
         if (cancelado) return;
 
-        const produtosComImagens = produtosRes.map((p, idx) => {
-          const resImg = imagensResultados[idx];
-          return {
-            ...p,
-            images: resImg.status === "fulfilled" ? resImg.value : [],
-          };
-        });
-        setProdutos(produtosComImagens);
+        setProdutos(produtosRes);
 
         const mapaComentarios: Record<number, ComentarioAvaliacao[]> = {};
         avaliacoesRes.ratings.forEach((r, idx) => {
