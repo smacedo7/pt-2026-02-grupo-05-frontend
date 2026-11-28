@@ -46,7 +46,6 @@ export async function buscarProdutos(limite = 10): Promise<ResultadoProdutos> {
         categoriaSlug: "",
         subcategoriaSlug: "",
         criadoEm: item.createdAt,
-        avaliacao: 0,
       };
     });
 
