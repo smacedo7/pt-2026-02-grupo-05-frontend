@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { ProdutoLoja } from "@/lib/produtos/tipos";
 
 const formatadorPreco = new Intl.NumberFormat("pt-BR", {
@@ -20,7 +21,7 @@ export default function CardProdutoLoja({ produto, ehDono, aoEditar }: Props) {
   const disponivel = produto.stock > 0;
 
   return (
-    <article className="relative flex h-full flex-col gap-3 rounded-3xl bg-white p-4 shadow-sm transition-transform hover:-translate-y-0.5">
+    <article className="relative flex h-full flex-col gap-3 rounded-3xl bg-white p-4 shadow-sm transition-transform hover:-translate-y-0.5 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-[#6A38F3]">
       {ehDono && (
         <button
           type="button"
@@ -65,7 +66,13 @@ export default function CardProdutoLoja({ produto, ehDono, aoEditar }: Props) {
 
       <div className="flex flex-1 flex-col gap-1">
         <h3 className="text-base font-semibold leading-tight text-[#171a17] md:text-lg">
-          {produto.name}
+          {/* O ::after estica o link para o card inteiro; o lápis fica acima (z-10). */}
+          <Link
+            href={`/produtos/${produto.id}`}
+            className="outline-none after:absolute after:inset-0 after:rounded-3xl"
+          >
+            {produto.name}
+          </Link>
         </h3>
         <p className="text-sm font-medium text-[#171a17]">
           {formatadorPreco.format(produto.price)}
