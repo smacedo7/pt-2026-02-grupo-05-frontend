@@ -25,6 +25,7 @@ import type {
 } from "@/lib/avaliacoes/tipos";
 import { buscarLoja, obterTokenAutenticado } from "@/lib/lojas/lojasApi";
 import type { Loja } from "@/lib/lojas/tipos";
+import { listarProdutosDaLoja } from "@/lib/produtos/listarProdutosDaLoja";
 import type { ProdutoLoja } from "@/lib/produtos/tipos";
 import { api } from "@/lib/api";
 
@@ -33,6 +34,70 @@ type Props = {
 };
 
 const ITENS_POR_PAGINA = 10;
+const LIMITE_PRODUTOS = 50; // o padrão de GET /products
+const CLASSE_BOTAO_DONO =
+  "inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer";
+
+function BotaoAdicionarProduto({ aoClicar }: { aoClicar: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={aoClicar}
+      aria-label="Adicionar produto"
+      title="Adicionar produto"
+      className={CLASSE_BOTAO_DONO}
+    >
+      <svg
+        className="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      <span>Adicionar Produto</span>
+    </button>
+  );
+}
+
+function AcoesDonoLoja({
+  aoEditarLoja,
+  aoAdicionarProduto,
+}: {
+  aoEditarLoja: () => void;
+  aoAdicionarProduto: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <button
+        type="button"
+        onClick={aoEditarLoja}
+        aria-label="Editar informações da loja"
+        title="Editar informações da loja"
+        className={CLASSE_BOTAO_DONO}
+      >
+        <svg
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+        <span>Editar Loja</span>
+      </button>
+
+      <BotaoAdicionarProduto aoClicar={aoAdicionarProduto} />
+    </div>
+  );
+}
 
 export default function LojaDetalhesConteudo({ lojaId }: Props) {
   const router = useRouter();
@@ -60,6 +125,12 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     Record<number, ComentarioAvaliacao[]>
   >({});
   const [paginaAtual, setPaginaAtual] = useState(1);
+  // Falha na consulta não é loja sem produtos: a vitrine mostra o erro.
+  const [erroProdutos, setErroProdutos] = useState(false);
+  const [recarregandoProdutos, setRecarregandoProdutos] = useState(false);
+  const [bannerComErro, setBannerComErro] = useState<string | null>(null);
+  const [logoComErro, setLogoComErro] = useState<string | null>(null);
+  const [stickerComErro, setStickerComErro] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -67,6 +138,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     async function carregarDados() {
       setCarregando(true);
       setErro(null);
+      setErroProdutos(false);
 
       if (Number.isNaN(lojaId)) {
         setErro("Identificador de loja inválido.");
@@ -75,7 +147,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
       }
 
       const token = obterTokenAutenticado();
-      const [usuarioRes, resLoja, avaliacoesRes, produtosRes] =
+      const [usuarioRes, resLoja, avaliacoesRes, resProdutos] =
         await Promise.all([
           token
             ? api
@@ -87,10 +159,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
             : Promise.resolve(null),
           buscarLoja(lojaId),
           listarAvaliacoesLoja(lojaId),
-          api
-            .get<ProdutoLoja[]>("/products", { params: { storeId: lojaId } })
-            .then((r) => (Array.isArray(r.data) ? r.data : []))
-            .catch(() => [] as ProdutoLoja[]),
+          listarProdutosDaLoja(lojaId, LIMITE_PRODUTOS),
         ]);
 
       if (cancelado) return;
@@ -109,7 +178,8 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
         );
         if (cancelado) return;
 
-        setProdutos(produtosRes);
+        setProdutos(resProdutos.tipo === "ok" ? resProdutos.produtos : []);
+        setErroProdutos(resProdutos.tipo === "erro");
 
         const mapaComentarios: Record<number, ComentarioAvaliacao[]> = {};
         avaliacoesRes.ratings.forEach((r, idx) => {
@@ -138,6 +208,9 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
   }, [lojaId]);
 
   const ehDono = Boolean(usuarioLogado && loja && usuarioLogado.id === loja.userId);
+  const bannerValido = Boolean(loja?.bannerUrl && bannerComErro !== loja.bannerUrl);
+  const logoValida = Boolean(loja?.logoUrl && logoComErro !== loja.logoUrl);
+  const stickerValido = Boolean(loja?.stickerUrl && stickerComErro !== loja.stickerUrl);
 
   const mediaAvaliacoes = useMemo(() => {
     if (avaliacoes.length === 0) return null;
@@ -151,6 +224,17 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     const inicio = (paginaAtual - 1) * ITENS_POR_PAGINA;
     return produtos.slice(inicio, inicio + ITENS_POR_PAGINA);
   }, [produtos, paginaAtual]);
+
+  async function recarregarProdutos() {
+    setRecarregandoProdutos(true);
+    const resultado = await listarProdutosDaLoja(lojaId, LIMITE_PRODUTOS);
+    if (resultado.tipo === "ok") {
+      setProdutos(resultado.produtos);
+      setPaginaAtual(1);
+    }
+    setErroProdutos(resultado.tipo === "erro");
+    setRecarregandoProdutos(false);
+  }
 
   function aoSalvarLoja(lojaAtualizada: Loja) {
     setLoja(lojaAtualizada);
@@ -166,6 +250,8 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     setProdutos((prev) => [produtoCriado, ...prev]);
     setPaginaAtual(1);
     toast.success(`Produto "${produtoCriado.name}" adicionado com sucesso!`);
+    // Sem a lista completa, só o produto novo daria uma vitrine incompleta.
+    if (erroProdutos) recarregarProdutos();
   }
 
   function aoSalvarProduto(produtoAtualizado: ProdutoLoja) {
@@ -328,18 +414,19 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
       {loja && !carregando && (
         <main className="flex-1 flex flex-col">
           {/* 1. Hero Banner da Loja conforme Figma Loja (Logado) */}
-          <section className="relative w-full h-[360px] sm:h-[440px] md:h-[500px] bg-[#171a17] overflow-hidden">
-            {loja.bannerUrl ? (
+          <section className="relative flex w-full min-h-[360px] flex-col sm:min-h-[440px] md:min-h-[500px] bg-[#171a17] overflow-hidden">
+            {bannerValido && loja.bannerUrl ? (
               <Image
                 src={loja.bannerUrl}
                 alt={`Banner de capa da loja ${loja.name}`}
                 fill
                 unoptimized
                 priority
+                onError={() => setBannerComErro(loja.bannerUrl)}
                 className="object-cover"
               />
             ) : (
-              <div className="h-full w-full bg-radial from-[#2a1a4a] to-[#0d0d0d]" />
+              <div className="absolute inset-0 bg-radial from-[#2a1a4a] to-[#0d0d0d]" />
             )}
 
             <div
@@ -350,7 +437,8 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
               }}
             />
 
-            <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-between px-4 sm:px-8 py-6">
+            {/* Altura mínima: nome e descrição longos aumentam o banner em vez de serem cortados. */}
+            <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-between gap-4 px-4 sm:px-8 py-6">
               <div className="flex items-center justify-between">
                 <Link
                   href="/"
@@ -370,86 +458,47 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                 </Link>
 
                 {ehDono && (
-                  <div className="flex flex-col items-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setModalEditarAberto(true)}
-                      aria-label="Editar informações da loja"
-                      title="Editar informações da loja"
-                      className="inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                      <span>Editar Loja</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setModalCriarProdutoAberto(true)}
-                      aria-label="Adicionar produto"
-                      title="Adicionar produto"
-                      className="inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2.4}
-                        strokeLinecap="round"
-                        aria-hidden="true"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                      <span>Adicionar Produto</span>
-                    </button>
-                  </div>
+                  <AcoesDonoLoja
+                    aoEditarLoja={() => setModalEditarAberto(true)}
+                    aoAdicionarProduto={() => setModalCriarProdutoAberto(true)}
+                  />
                 )}
               </div>
 
               <div className="flex flex-col items-center text-center my-auto px-4">
-                {(loja.logoUrl || loja.stickerUrl) && (
-                  <div className="relative mb-4 flex items-center justify-center">
-                    {loja.logoUrl && (
-                      <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden border-2 border-[#F6F3E4]/80 shadow-xl bg-white/10">
-                        <Image
-                          src={loja.logoUrl}
-                          alt={`Logo da loja ${loja.name}`}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    {loja.stickerUrl && (
-                      <div
-                        className={`relative h-10 w-10 rounded-full bg-white p-1 shadow-md overflow-hidden ${
-                          loja.logoUrl ? "-ml-4 mt-12" : ""
-                        }`}
-                      >
-                        <Image
-                          src={loja.stickerUrl}
-                          alt="Selo da loja"
-                          fill
-                          unoptimized
-                          className="object-contain"
-                        />
-                      </div>
+                <div className="relative mb-4 flex items-center justify-center">
+                  {/* Sem logo, ou se ela falhar, a inicial identifica a loja, como em /lojas. */}
+                  <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden border-2 border-[#F6F3E4]/80 shadow-xl bg-white/10 flex items-center justify-center">
+                    {logoValida && loja.logoUrl ? (
+                      <Image
+                        src={loja.logoUrl}
+                        alt={`Logo da loja ${loja.name}`}
+                        fill
+                        unoptimized
+                        onError={() => setLogoComErro(loja.logoUrl)}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <span aria-hidden="true" className="text-2xl font-bold text-[#F6F3E4]">
+                        {loja.name.trim().charAt(0).toUpperCase() || "L"}
+                      </span>
                     )}
                   </div>
-                )}
+                  {stickerValido && loja.stickerUrl && (
+                    <div className="relative -ml-4 mt-12 h-10 w-10 rounded-full bg-white p-1 shadow-md overflow-hidden">
+                      <Image
+                        src={loja.stickerUrl}
+                        alt="Selo da loja"
+                        fill
+                        unoptimized
+                        onError={() => setStickerComErro(loja.stickerUrl)}
+                        className="object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#F6F3E4] drop-shadow-md">
+                <h1 className="w-full break-words text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#F6F3E4] drop-shadow-md">
                   {loja.name}
                 </h1>
 
@@ -497,149 +546,169 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
           {/* 3. Vitrine de Produtos */}
           <section className="w-full bg-[#F6F3E4] py-12 sm:py-16 flex-1">
             <div className="mx-auto max-w-7xl px-4 sm:px-8 space-y-14">
-              <div>
-                <div className="flex items-baseline justify-between mb-6">
-                  <h2 className="text-2xl sm:text-3xl font-medium text-black">
-                    Produtos{" "}
-                    <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
-                      melhor avaliados
-                    </span>
-                  </h2>
-                  {produtos.length > 5 && (
-                    <a
-                      href="#todos-produtos-loja"
-                      className="text-sm font-medium text-[#6A38F3] hover:underline"
-                    >
-                      ver mais
-                    </a>
+              {erroProdutos ? (
+                <div
+                  role="alert"
+                  className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center"
+                >
+                  <p className="text-sm font-medium text-red-800">
+                    Não foi possível carregar os produtos desta loja.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={recarregarProdutos}
+                    disabled={recarregandoProdutos}
+                    className={`mt-4 ${CLASSE_BOTAO_DONO} disabled:cursor-default disabled:opacity-60`}
+                  >
+                    {recarregandoProdutos ? "Carregando..." : "Tentar novamente"}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {produtos.length > 0 && (
+                    <div>
+                      <div className="flex items-baseline justify-between mb-6">
+                        <h2 className="text-2xl sm:text-3xl font-medium text-black">
+                          Produtos{" "}
+                          <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
+                            melhor avaliados
+                          </span>
+                        </h2>
+                        {produtos.length > 5 && (
+                          <a
+                            href="#todos-produtos-loja"
+                            className="text-sm font-medium text-[#6A38F3] hover:underline"
+                          >
+                            ver mais
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                        {produtosDestaque.map((produto) => (
+                          <CardProdutoLoja
+                            key={`destaque-${produto.id}`}
+                            produto={produto}
+                            ehDono={ehDono}
+                            aoEditar={setProdutoEditando}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </div>
 
-                {produtosDestaque.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
-                    <p className="text-sm font-medium text-black/70">
-                      Nenhum produto cadastrado para esta loja até o momento.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    {produtosDestaque.map((produto) => (
-                      <CardProdutoLoja
-                        key={`destaque-${produto.id}`}
-                        produto={produto}
-                        ehDono={ehDono}
-                        aoEditar={setProdutoEditando}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div id="todos-produtos-loja">
-                <div className="flex items-baseline justify-between mb-6">
-                  <h2 className="text-2xl sm:text-3xl font-medium text-black">
-                    Produtos{" "}
-                    <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
-                      de {loja.name}
-                    </span>
-                  </h2>
-                  <span className="text-xs font-semibold text-black/60">
-                    {produtos.length} {produtos.length === 1 ? "item" : "itens"}
-                  </span>
-                </div>
-
-                {produtos.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
-                    <p className="text-sm font-medium text-black/70">
-                      Vitrine vazia. Novos produtos adicionados à loja aparecerão aqui.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                      {produtosPaginados.map((produto) => (
-                        <CardProdutoLoja
-                          key={`grade-${produto.id}`}
-                          produto={produto}
-                          ehDono={ehDono}
-                          aoEditar={setProdutoEditando}
-                        />
-                      ))}
+                  <div id="todos-produtos-loja">
+                    <div className="flex items-baseline justify-between mb-6">
+                      <h2 className="text-2xl sm:text-3xl font-medium text-black">
+                        Produtos{" "}
+                        <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
+                          de {loja.name}
+                        </span>
+                      </h2>
+                      <span className="text-xs font-semibold text-black/60">
+                        {produtos.length} {produtos.length === 1 ? "item" : "itens"}
+                      </span>
                     </div>
 
-                    {totalPaginas > 1 && (
-                      <nav
-                        aria-label="Paginação de produtos da loja"
-                        className="mt-10 flex items-center justify-center gap-6"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
-                          disabled={paginaAtual === 1}
-                          aria-label="Página anterior"
-                          className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
-                        >
-                          <svg
-                            className="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="15 18 9 12 15 6" />
-                          </svg>
-                        </button>
-
-                        <div className="flex items-center gap-5">
-                          {Array.from({ length: totalPaginas }).map((_, idx) => {
-                            const num = idx + 1;
-                            const ativa = num === paginaAtual;
-                            return (
-                              <button
-                                key={num}
-                                type="button"
-                                onClick={() => setPaginaAtual(num)}
-                                aria-current={ativa ? "page" : undefined}
-                                className={`text-2xl sm:text-3xl font-medium transition-colors cursor-pointer ${
-                                  ativa
-                                    ? "text-[#6A38F3] underline underline-offset-4"
-                                    : "text-black/70 hover:text-black"
-                                }`}
-                              >
-                                {num}
-                              </button>
-                            );
-                          })}
+                    {produtos.length === 0 ? (
+                      <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
+                        <p className="text-sm font-medium text-black/70">
+                          Vitrine vazia. Novos produtos adicionados à loja aparecerão aqui.
+                        </p>
+                        {ehDono && (
+                          <div className="mt-4 flex justify-center">
+                            <BotaoAdicionarProduto aoClicar={() => setModalCriarProdutoAberto(true)} />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                          {produtosPaginados.map((produto) => (
+                            <CardProdutoLoja
+                              key={`grade-${produto.id}`}
+                              produto={produto}
+                              ehDono={ehDono}
+                              aoEditar={setProdutoEditando}
+                            />
+                          ))}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPaginaAtual((p) => Math.min(totalPaginas, p + 1))
-                          }
-                          disabled={paginaAtual === totalPaginas}
-                          aria-label="Próxima página"
-                          className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
-                        >
-                          <svg
-                            className="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                        {totalPaginas > 1 && (
+                          <nav
+                            aria-label="Paginação de produtos da loja"
+                            className="mt-10 flex items-center justify-center gap-6"
                           >
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </button>
-                      </nav>
+                            <button
+                              type="button"
+                              onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+                              disabled={paginaAtual === 1}
+                              aria-label="Página anterior"
+                              className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
+                            >
+                              <svg
+                                className="h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="15 18 9 12 15 6" />
+                              </svg>
+                            </button>
+
+                            <div className="flex items-center gap-5">
+                              {Array.from({ length: totalPaginas }).map((_, idx) => {
+                                const num = idx + 1;
+                                const ativa = num === paginaAtual;
+                                return (
+                                  <button
+                                    key={num}
+                                    type="button"
+                                    onClick={() => setPaginaAtual(num)}
+                                    aria-current={ativa ? "page" : undefined}
+                                    className={`text-2xl sm:text-3xl font-medium transition-colors cursor-pointer ${
+                                      ativa
+                                        ? "text-[#6A38F3] underline underline-offset-4"
+                                        : "text-black/70 hover:text-black"
+                                    }`}
+                                  >
+                                    {num}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPaginaAtual((p) => Math.min(totalPaginas, p + 1))
+                              }
+                              disabled={paginaAtual === totalPaginas}
+                              aria-label="Próxima página"
+                              className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
+                            >
+                              <svg
+                                className="h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </button>
+                          </nav>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
