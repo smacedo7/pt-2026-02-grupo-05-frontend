@@ -121,6 +121,9 @@ export function useVitrine() {
     const todasComErro = !carregando && totalOk === 0 && totalErros > 0;
     return {
       secoesVisiveis: visiveis,
+      carregandoProdutos: carregando,
+      totalEncontrados,
+      categoriasComErro: totalErros,
       // Sem categorias carregadas não há o que buscar nem como afirmar que não há resultado.
       semResultados:
         buscando && categorias.length > 0 && !carregando && !todasComErro && totalEncontrados === 0,

@@ -37,6 +37,9 @@ export default function SecoesPorCategoria({ vitrine, variante = 'grade', ref }:
     secoesVisiveis,
     semResultados,
     erroNaBusca,
+    carregandoProdutos,
+    totalEncontrados,
+    categoriasComErro,
   } = vitrine;
 
   const fileira = variante === 'fileira';
@@ -53,9 +56,18 @@ export default function SecoesPorCategoria({ vitrine, variante = 'grade', ref }:
     <section
       ref={ref}
       aria-label="Produtos por categoria"
-      className="mt-10 flex scroll-mt-24 flex-col gap-16"
+      className={`flex scroll-mt-24 flex-col gap-16 ${fileira ? '' : 'mt-10'}`}
     >
-      <div role="status" aria-live="polite">
+      <div role="status" aria-live="polite" className={fileira ? 'empty:-mb-16' : undefined}>
+        {fileira && buscando && !carregandoProdutos && totalEncontrados > 0 && (
+          <p className="text-sm text-gray-700">
+            {totalEncontrados === 1
+              ? '1 produto encontrado'
+              : `${totalEncontrados} produtos encontrados`}
+            {categoriasComErro > 0 &&
+              '. Algumas categorias não carregaram e ficaram fora da busca.'}
+          </p>
+        )}
         {semResultados && (
           <div className="flex flex-col items-center gap-3 text-center">
             <p className="text-base text-gray-600">
