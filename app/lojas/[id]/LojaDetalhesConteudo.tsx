@@ -414,7 +414,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
       {loja && !carregando && (
         <main className="flex-1 flex flex-col">
           {/* 1. Hero Banner da Loja conforme Figma Loja (Logado) */}
-          <section className="relative w-full h-[360px] sm:h-[440px] md:h-[500px] bg-[#171a17] overflow-hidden">
+          <section className="relative flex w-full min-h-[360px] flex-col sm:min-h-[440px] md:min-h-[500px] bg-[#171a17] overflow-hidden">
             {bannerValido && loja.bannerUrl ? (
               <Image
                 src={loja.bannerUrl}
@@ -437,7 +437,8 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
               }}
             />
 
-            <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-between px-4 sm:px-8 py-6">
+            {/* Altura mínima: nome e descrição longos aumentam o banner em vez de serem cortados. */}
+            <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-between gap-4 px-4 sm:px-8 py-6">
               <div className="flex items-center justify-between">
                 <Link
                   href="/"
@@ -504,7 +505,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                   </div>
                 )}
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#F6F3E4] drop-shadow-md">
+                <h1 className="w-full break-words text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#F6F3E4] drop-shadow-md">
                   {loja.name}
                 </h1>
 
