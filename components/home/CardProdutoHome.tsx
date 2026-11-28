@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ProdutoApi } from '@/lib/produtos/tipos';
 
 const formatadorPreco = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -45,8 +46,8 @@ export function ProductCard({
   ].join(', ');
 
   return (
-    <button
-      type="button"
+    <Link
+      href={`/produtos/${produto.id}`}
       aria-label={nomeAcessivel}
       className="group relative flex h-full min-h-[260px] w-full cursor-pointer flex-col justify-between rounded-2xl bg-white p-4 text-left shadow-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
     >
@@ -75,6 +76,6 @@ export function ProductCard({
           {estoque}
         </span>
       </div>
-    </button>
+    </Link>
   );
 }
