@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import { criarUsuario, type CampoCadastro } from "./criar-usuario";
 
 const campoBase =
@@ -13,7 +14,6 @@ export default function CadastroForm() {
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
     const [erros, setErros] = useState<Partial<Record<CampoCadastro, string>>>({});
-    const [erroGeral, setErroGeral] = useState<string | null>(null);
     const [enviando, setEnviando] = useState(false);
     // O estado chega depois do próximo clique; a ref bloqueia envios duplicados já.
     const envioEmAndamento = useRef(false);
@@ -63,9 +63,9 @@ export default function CadastroForm() {
         }
 
         setErros(novosErros);
-        setErroGeral(null);
 
         if (Object.keys(novosErros).length > 0) {
+            toast.error(Object.values(novosErros)[0] ?? "Revise os campos informados.");
             return;
         }
 
@@ -81,6 +81,7 @@ export default function CadastroForm() {
         });
 
         if (resultado.tipo === "criado") {
+            toast.success("Conta criada com sucesso! Faça login para continuar.");
             // Fica bloqueado até a navegação, para não reenviar o cadastro.
             router.push("/login");
             return;
@@ -89,7 +90,7 @@ export default function CadastroForm() {
         if (resultado.tipo === "validacao") {
             setErros(resultado.campos);
             if (Object.keys(resultado.campos).length === 0) {
-                setErroGeral("Revise os dados informados.");
+                toast.error("Revise os dados informados.");
             }
         } else if (resultado.tipo === "conflito") {
             const camposEmUso: Partial<Record<CampoCadastro, string>> = {};
@@ -101,14 +102,14 @@ export default function CadastroForm() {
             }
             setErros(camposEmUso);
             if (Object.keys(camposEmUso).length === 0) {
-                setErroGeral("Email ou username já cadastrado.");
+                toast.error("Email ou username já cadastrado.");
             }
         } else if (resultado.tipo === "conexao") {
-            setErroGeral(
+            toast.error(
                 "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
             );
         } else {
-            setErroGeral("Não foi possível concluir o cadastro. Tente novamente.");
+            toast.error("Não foi possível concluir o cadastro. Tente novamente.");
         }
 
         envioEmAndamento.current = false;
@@ -280,12 +281,6 @@ export default function CadastroForm() {
                         </p>
                     )}
                 </div>
-
-                {erroGeral && (
-                    <p role="alert" className="mt-3 px-5 text-center text-sm text-red-400">
-                        {erroGeral}
-                    </p>
-                )}
 
                 <button
                     type="submit"

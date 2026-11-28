@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { BannerErroModal, ModalBase } from "@/components/ui/ModalBase";
+import { toast } from "react-toastify";
+import { ModalBase } from "@/components/ui/ModalBase";
+import { mensagemErroResultado } from "@/lib/apiCliente";
 import { alterarMinhaSenha } from "@/lib/perfil/perfilApi";
 
 export type ModalAlterarSenhaProps = {
@@ -27,7 +29,6 @@ function ModalAlterarSenhaDialog({
 
   const [salvando, setSalvando] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
-  const [erroGeral, setErroGeral] = useState<string | null>(null);
 
   const primeiroInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,12 +49,13 @@ function ModalAlterarSenhaDialog({
     }
 
     setErros(novosErros);
+    const primeiroErro = Object.values(novosErros)[0];
+    if (primeiroErro) toast.error(primeiroErro);
     return Object.keys(novosErros).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErroGeral(null);
     if (!validarCampos()) return;
 
     setSalvando(true);
@@ -65,21 +67,20 @@ function ModalAlterarSenhaDialog({
     setSalvando(false);
 
     if (resultado.tipo === "sucesso") {
+      toast.success("Senha alterada com sucesso!");
       aoSalvar();
       aoFechar();
       return;
     }
 
-    if (resultado.tipo === "validacao") {
-      setErroGeral(resultado.mensagem);
-      if (resultado.campos) setErros((prev) => ({ ...prev, ...resultado.campos }));
-    } else if (resultado.tipo === "nao-autorizado") {
-      setErroGeral("Sessão expirada. Faça login novamente.");
-    } else if (resultado.tipo === "conexao") {
-      setErroGeral("Não foi possível conectar ao servidor.");
-    } else {
-      setErroGeral(resultado.mensagem || "Erro ao alterar a senha.");
+    if (resultado.tipo === "validacao" && resultado.campos) {
+      setErros((prev) => ({ ...prev, ...resultado.campos }));
     }
+    toast.error(
+      mensagemErroResultado(resultado, {
+        padrao: "Erro ao alterar a senha.",
+      })
+    );
   }
 
   return (
@@ -111,7 +112,6 @@ function ModalAlterarSenhaDialog({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <BannerErroModal mensagem={erroGeral} />
 
         <div>
           <label htmlFor="senha-atual" className="sr-only">

@@ -137,30 +137,6 @@ export function ModalBase({
   );
 }
 
-export function BannerErroModal({ mensagem }: { mensagem: string | null }) {
-  if (!mensagem) return null;
-  return (
-    <div
-      role="alert"
-      className="rounded-2xl border border-red-300 bg-red-100/90 p-3.5 text-sm text-red-800 flex items-start gap-3 shadow-xs"
-    >
-      <svg
-        className="h-5 w-5 text-red-600 shrink-0 mt-0.5"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path
-          fillRule="evenodd"
-          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-          clipRule="evenodd"
-        />
-      </svg>
-      <span>{mensagem}</span>
-    </div>
-  );
-}
-
 type BotaoDeletarConfirmacaoProps = {
   idDialogo: string;
   rotuloBotao?: string;
