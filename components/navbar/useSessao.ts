@@ -53,9 +53,20 @@ export function useSessao() {
       }
     }
 
+    // O botão voltar pode devolver a página inteira do cache do navegador, ainda
+    // com a sessão anterior na tela. Se o token mudou, a página é recarregada.
+    const tokenNaTela = lerToken();
+    function aoRestaurarPagina(evento: PageTransitionEvent) {
+      if (evento.persisted && lerToken() !== tokenNaTela) {
+        window.location.reload();
+      }
+    }
+    window.addEventListener("pageshow", aoRestaurarPagina);
+
     verificarSessao();
     return () => {
       cancelado = true;
+      window.removeEventListener("pageshow", aoRestaurarPagina);
     };
   }, []);
 
