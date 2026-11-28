@@ -100,3 +100,47 @@ export function extrairErrosCampos<T extends string>(
 
   return { mensagemGeral, campos };
 }
+
+export type ResultadoApiErro =
+  | { tipo: "validacao"; mensagem: string }
+  | { tipo: "proibido"; mensagem: string }
+  | { tipo: "nao-autorizado" }
+  | { tipo: "nao-encontrado" }
+  | { tipo: "conflito"; mensagem?: string }
+  | { tipo: "conexao" }
+  | { tipo: "erro"; mensagem: string };
+
+/** Converte resultados de erro padronizados das APIs em mensagem amigável para Toast/UI. */
+export function mensagemErroResultado(
+  resultado: ResultadoApiErro,
+  opcoes?: {
+    naoAutorizado?: string;
+    naoEncontrado?: string;
+    conflito?: string;
+    conexao?: string;
+    padrao?: string;
+  }
+): string {
+  switch (resultado.tipo) {
+    case "validacao":
+    case "proibido":
+      return resultado.mensagem || opcoes?.padrao || "Verifique os dados informados.";
+    case "nao-autorizado":
+      return opcoes?.naoAutorizado || "Sessão expirada. Faça login novamente.";
+    case "nao-encontrado":
+      return opcoes?.naoEncontrado || "Registro não encontrado no servidor.";
+    case "conflito":
+      return (
+        opcoes?.conflito ||
+        resultado.mensagem ||
+        "Conflito ao salvar os dados. Tente novamente."
+      );
+    case "conexao":
+      return (
+        opcoes?.conexao ||
+        "Não foi possível conectar ao servidor. Verifique se o backend está em execução."
+      );
+    default:
+      return resultado.mensagem || opcoes?.padrao || "Ocorreu um erro inesperado.";
+  }
+}

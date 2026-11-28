@@ -2,11 +2,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import {
-  BannerErroModal,
-  BotaoDeletarConfirmacao,
-  ModalBase,
-} from "@/components/ui/ModalBase";
+import { toast } from "react-toastify";
+import { BotaoDeletarConfirmacao, ModalBase } from "@/components/ui/ModalBase";
+import { mensagemErroResultado } from "@/lib/apiCliente";
 import type { UsuarioPerfil } from "@/lib/perfil/tipos";
 import {
   atualizarMeuPerfil,
@@ -47,11 +45,8 @@ function ModalEditarPerfilDialog({
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [deletando, setDeletando] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
-  const [erroGeral, setErroGeral] = useState<string | null>(null);
-  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
   const primeiroInputRef = useRef<HTMLInputElement>(null);
-  const fecharTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ocupado = carregando || salvando || deletando;
 
   useEffect(() => {
@@ -59,7 +54,6 @@ function ModalEditarPerfilDialog({
 
     async function carregar() {
       setCarregando(true);
-      setErroGeral(null);
       const res = await buscarMeuPerfil();
       if (cancelado) return;
 
@@ -68,12 +62,8 @@ function ModalEditarPerfilDialog({
         setUsername(res.perfil.username);
         setEmail(res.perfil.email);
         setFotoUrl(res.perfil.profilePictureUrl ?? "");
-      } else if (res.tipo === "nao-autorizado") {
-        setErroGeral("Sessão expirada. Faça login novamente.");
-      } else if (res.tipo === "conexao") {
-        setErroGeral("Não foi possível conectar ao servidor.");
       } else {
-        setErroGeral(res.mensagem);
+        toast.error(mensagemErroResultado(res));
       }
       setCarregando(false);
     }
@@ -81,7 +71,6 @@ function ModalEditarPerfilDialog({
     carregar();
     return () => {
       cancelado = true;
-      if (fecharTimerRef.current) clearTimeout(fecharTimerRef.current);
     };
   }, []);
 
@@ -121,13 +110,13 @@ function ModalEditarPerfilDialog({
     }
 
     setErros(novosErros);
+    const primeiroErro = Object.values(novosErros)[0];
+    if (primeiroErro) toast.error(primeiroErro);
     return Object.keys(novosErros).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErroGeral(null);
-    setMensagemSucesso(null);
     if (!validarCampos()) return;
 
     setSalvando(true);
@@ -140,50 +129,43 @@ function ModalEditarPerfilDialog({
     setSalvando(false);
 
     if (resultado.tipo === "sucesso") {
-      setNome(resultado.perfil.name);
-      setUsername(resultado.perfil.username);
-      setEmail(resultado.perfil.email);
-      setFotoUrl(resultado.perfil.profilePictureUrl ?? "");
-      setMensagemSucesso("Perfil atualizado com sucesso!");
+      toast.success("Perfil atualizado com sucesso!");
       aoAtualizar?.(resultado.perfil);
-      fecharTimerRef.current = setTimeout(() => {
-        aoFechar();
-      }, 800);
+      aoFechar();
       return;
     }
 
-    if (resultado.tipo === "validacao" || resultado.tipo === "conflito") {
-      setErroGeral(resultado.mensagem);
-      if (resultado.campos) setErros((prev) => ({ ...prev, ...resultado.campos }));
-    } else if (resultado.tipo === "nao-autorizado") {
-      setErroGeral("Sessão expirada. Faça login novamente.");
-    } else if (resultado.tipo === "conexao") {
-      setErroGeral("Não foi possível conectar ao servidor.");
-    } else {
-      setErroGeral(resultado.mensagem || "Erro ao salvar alterações.");
+    if (
+      (resultado.tipo === "validacao" || resultado.tipo === "conflito") &&
+      resultado.campos
+    ) {
+      setErros((prev) => ({ ...prev, ...resultado.campos }));
     }
+    toast.error(
+      mensagemErroResultado(resultado, {
+        padrao: "Erro ao salvar alterações.",
+      })
+    );
   }
 
   async function handleDeletarConta() {
-    setErroGeral(null);
     setDeletando(true);
     const resultado = await deletarMinhaConta();
     setDeletando(false);
 
     if (resultado.tipo === "sucesso") {
+      toast.success("Conta excluída com sucesso.");
       aoFechar();
       aoDeletarConta();
       return;
     }
 
     setConfirmandoExclusao(false);
-    if (resultado.tipo === "nao-autorizado") {
-      setErroGeral("Sessão expirada. Faça login novamente.");
-    } else if (resultado.tipo === "conexao") {
-      setErroGeral("Não foi possível conectar ao servidor.");
-    } else {
-      setErroGeral(resultado.mensagem || "Não foi possível deletar a conta.");
-    }
+    toast.error(
+      mensagemErroResultado(resultado, {
+        padrao: "Não foi possível deletar a conta.",
+      })
+    );
   }
 
   const avatarValido = Boolean(fotoUrl.trim() && URL_REGEX.test(fotoUrl.trim()));
@@ -246,17 +228,6 @@ function ModalEditarPerfilDialog({
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <BannerErroModal mensagem={erroGeral} />
-
-          {mensagemSucesso && (
-            <div
-              role="status"
-              className="rounded-2xl border border-green-300 bg-green-100 p-3 text-sm font-medium text-green-900 text-center"
-            >
-              {mensagemSucesso}
-            </div>
-          )}
-
           {editandoFoto && (
             <div className="space-y-1">
               <label
