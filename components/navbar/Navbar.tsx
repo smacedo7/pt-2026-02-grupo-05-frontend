@@ -7,7 +7,7 @@ import { useSessao } from "./useSessao";
 
 const ICONE = "h-6 w-6 shrink-0";
 const BOTAO_ICONE =
-  "flex h-11 w-11 items-center justify-center rounded-full md:h-10 md:w-10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo disabled:cursor-default disabled:hover:bg-transparent";
+  "flex h-11 w-11 items-center justify-center rounded-full md:h-10 md:w-10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo";
 
 function IconeSacola() {
   return (
@@ -68,9 +68,9 @@ export default function Navbar() {
           <LinkNavbar href="/produtos" rotulo="Produtos" className={BOTAO_ICONE} classeAtiva="text-limao">
             <IconeSacola />
           </LinkNavbar>
-          <button type="button" disabled title="Em breve" aria-label="Lojas (em breve)" className={BOTAO_ICONE}>
+          <LinkNavbar href="/lojas" rotulo="Lojas" className={BOTAO_ICONE} classeAtiva="text-limao">
             <IconeLoja />
-          </button>
+          </LinkNavbar>
 
           {estado === "deslogado" && (
             <>
