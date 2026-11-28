@@ -42,7 +42,6 @@ export function ProductCard({ produto, loja }: { produto: ProdutoApi; loja?: Res
     precoFormatado,
     disponibilidade.toLowerCase(),
     loja && `loja ${loja.name}`,
-    'sem imagem',
   ]
     .filter(Boolean)
     .join(', ');

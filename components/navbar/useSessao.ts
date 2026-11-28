@@ -55,7 +55,7 @@ export function useSessao() {
 
     // O botão voltar pode devolver a página inteira do cache do navegador, ainda
     // com a sessão anterior na tela. Se o token mudou, a página é recarregada.
-    const tokenNaTela = lerToken();
+    let tokenNaTela = lerToken();
     function aoRestaurarPagina(evento: PageTransitionEvent) {
       if (evento.persisted && lerToken() !== tokenNaTela) {
         window.location.reload();
@@ -63,7 +63,15 @@ export function useSessao() {
     }
     window.addEventListener("pageshow", aoRestaurarPagina);
 
-    verificarSessao();
+    async function verificar() {
+      await verificarSessao();
+      // Se um token expirado foi limpo no 401 durante esta carga, não dispara reload falso ao voltar.
+      if (!cancelado && !lerToken()) {
+        tokenNaTela = null;
+      }
+    }
+
+    verificar();
     return () => {
       cancelado = true;
       window.removeEventListener("pageshow", aoRestaurarPagina);

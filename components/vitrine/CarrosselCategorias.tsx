@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import BotaoTentarNovamente from './BotaoTentarNovamente';
 import type { EstadoListaCategorias } from './categorias';
 
 type Props = {
@@ -139,13 +140,7 @@ export default function CarrosselCategorias({ lista, aoTentarNovamente, escuro =
             <p role="alert" className={`text-sm ${escuro ? 'text-red-300' : 'text-red-500'}`}>
               {lista.mensagem}
             </p>
-            <button
-              type="button"
-              onClick={aoTentarNovamente}
-              className="cursor-pointer rounded-full bg-roxo px-5 py-2 text-sm font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
-            >
-              Tentar novamente
-            </button>
+            <BotaoTentarNovamente aoClicar={aoTentarNovamente} />
           </div>
         )}
 

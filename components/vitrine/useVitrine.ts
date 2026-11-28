@@ -6,7 +6,11 @@ import { correspondeBuscaPorNome, normalizarTextoBusca } from '@/lib/categorias/
 import { listarCategoriasRaiz } from '@/lib/categorias/listarCategoriasRaiz';
 import { listarLojasPorId, type ResumoLoja } from '@/lib/lojas/listarLojasPorId';
 import type { ProdutoApi } from '@/lib/produtos/tipos';
-import { prepararCategoriasHome, type CategoriaHome, type EstadoListaCategorias } from './categorias';
+import {
+  prepararCategoriasVitrine,
+  type CategoriaVitrine,
+  type EstadoListaCategorias,
+} from './categorias';
 
 export type EstadoCategoria =
   | { status: 'carregando' }
@@ -14,7 +18,7 @@ export type EstadoCategoria =
   | { status: 'erro'; mensagem: string };
 
 export type SecaoCategoria = {
-  categoria: CategoriaHome;
+  categoria: CategoriaVitrine;
   estado: EstadoCategoria;
   /** Todos os produtos da categoria que passam na busca; cada tela decide quantos mostrar. */
   produtosFiltrados: ProdutoApi[];
@@ -27,6 +31,7 @@ const MENSAGEM_ERRO_CATEGORIAS = 'Não foi possível carregar as categorias.';
 /** Categorias raiz, produtos de cada uma e busca por nome sobre o que foi carregado. */
 export function useVitrine() {
   const buscaRef = useRef<HTMLInputElement>(null);
+  const produtosRef = useRef<HTMLElement>(null);
   const [textoBusca, setTextoBusca] = useState('');
   const [lista, setLista] = useState<EstadoListaCategorias>({ status: 'carregando' });
   const [tentativa, setTentativa] = useState(0);
@@ -48,7 +53,7 @@ export function useVitrine() {
         return;
       }
 
-      const categorias = prepararCategoriasHome(resposta.categorias);
+      const categorias = prepararCategoriasVitrine(resposta.categorias);
       setLista({ status: 'ok', categorias });
 
       categorias.forEach(async (cat) => {
@@ -142,11 +147,19 @@ export function useVitrine() {
     buscaRef.current?.focus();
   };
 
+  const rolarParaResultados = () => {
+    if (buscando) {
+      produtosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return {
     buscaRef,
+    produtosRef,
     textoBusca,
     setTextoBusca,
     limparBusca,
+    rolarParaResultados,
     buscando,
     lista,
     lojas,

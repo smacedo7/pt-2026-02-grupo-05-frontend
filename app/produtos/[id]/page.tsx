@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cache, Suspense } from "react";
 import Navbar from "@/components/navbar/Navbar";
 import { buscarProdutoPorId } from "@/lib/produtos/buscarProdutoPorId";
+import BotaoTentarNovamente from "./BotaoTentarNovamente";
 import GaleriaProduto from "./GaleriaProduto";
 import OutrosDaLoja from "./OutrosDaLoja";
 import ProdutoNaoEncontrado from "./ProdutoNaoEncontrado";
@@ -65,13 +66,7 @@ async function ConteudoProduto({ params }: Parametros) {
             ? "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente."
             : "Não foi possível carregar o produto."}
         </p>
-        {/* Link comum: recarrega a página e consulta a API de novo. */}
-        <a
-          href={`/produtos/${id}`}
-          className="rounded-full bg-roxo px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo"
-        >
-          Tentar novamente
-        </a>
+        <BotaoTentarNovamente />
       </main>
     );
   }

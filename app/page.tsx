@@ -1,22 +1,31 @@
 "use client";
 
-import { useRef } from 'react';
 import Image from 'next/image';
 import Navbar from '@/components/navbar/Navbar';
-import BarraBusca from '@/components/home/BarraBusca';
-import CarrosselCategorias from '@/components/home/CarrosselCategorias';
-import SecoesPorCategoria from '@/components/home/SecoesPorCategoria';
-import { useVitrine } from '@/components/home/useVitrine';
+import BarraBusca from '@/components/vitrine/BarraBusca';
+import CarrosselCategorias from '@/components/vitrine/CarrosselCategorias';
+import SecoesPorCategoria from '@/components/vitrine/SecoesPorCategoria';
+import { useVitrine } from '@/components/vitrine/useVitrine';
 
 export default function Home() {
-  const produtosRef = useRef<HTMLElement>(null);
-  const vitrine = useVitrine();
-
-  const rolarParaResultados = () => {
-    if (vitrine.buscando) {
-      produtosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+  const {
+    buscaRef,
+    produtosRef,
+    textoBusca,
+    setTextoBusca,
+    limparBusca,
+    rolarParaResultados,
+    buscando,
+    lista,
+    lojas,
+    tentarNovamente,
+    secoesVisiveis,
+    carregandoProdutos,
+    totalEncontrados,
+    categoriasComErro,
+    semResultados,
+    erroNaBusca,
+  } = useVitrine();
 
   return (
     <main className="flex min-h-screen flex-col overflow-x-hidden bg-[#fcf9f2] font-sans">
@@ -50,16 +59,29 @@ export default function Home() {
       <section aria-label="Conteúdo principal" className="relative z-20 flex-1 bg-[#fcf9f2] pb-20 pt-8">
         <div className="mx-auto max-w-7xl px-6">
           <BarraBusca
-            valor={vitrine.textoBusca}
-            aoMudar={vitrine.setTextoBusca}
+            valor={textoBusca}
+            aoMudar={setTextoBusca}
             aoEnviar={rolarParaResultados}
-            aoLimpar={vitrine.limparBusca}
-            inputRef={vitrine.buscaRef}
+            aoLimpar={limparBusca}
+            inputRef={buscaRef}
           />
 
-          <CarrosselCategorias lista={vitrine.lista} aoTentarNovamente={vitrine.tentarNovamente} />
+          <CarrosselCategorias lista={lista} aoTentarNovamente={tentarNovamente} />
 
-          <SecoesPorCategoria ref={produtosRef} vitrine={vitrine} />
+          <SecoesPorCategoria
+            secaoRef={produtosRef}
+            secoesVisiveis={secoesVisiveis}
+            lojas={lojas}
+            textoBusca={textoBusca}
+            buscando={buscando}
+            carregandoProdutos={carregandoProdutos}
+            totalEncontrados={totalEncontrados}
+            categoriasComErro={categoriasComErro}
+            semResultados={semResultados}
+            erroNaBusca={erroNaBusca}
+            aoLimparBusca={limparBusca}
+            aoTentarNovamente={tentarNovamente}
+          />
         </div>
       </section>
     </main>
