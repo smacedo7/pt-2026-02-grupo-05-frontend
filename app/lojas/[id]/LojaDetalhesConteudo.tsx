@@ -33,6 +33,63 @@ type Props = {
 };
 
 const ITENS_POR_PAGINA = 10;
+const CLASSE_BOTAO_DONO =
+  "inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer";
+
+function AcoesDonoLoja({
+  aoEditarLoja,
+  aoAdicionarProduto,
+}: {
+  aoEditarLoja: () => void;
+  aoAdicionarProduto: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <button
+        type="button"
+        onClick={aoEditarLoja}
+        aria-label="Editar informações da loja"
+        title="Editar informações da loja"
+        className={CLASSE_BOTAO_DONO}
+      >
+        <svg
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+        <span>Editar Loja</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={aoAdicionarProduto}
+        aria-label="Adicionar produto"
+        title="Adicionar produto"
+        className={CLASSE_BOTAO_DONO}
+      >
+        <svg
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        <span>Adicionar Produto</span>
+      </button>
+    </div>
+  );
+}
 
 export default function LojaDetalhesConteudo({ lojaId }: Props) {
   const router = useRouter();
@@ -60,6 +117,9 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     Record<number, ComentarioAvaliacao[]>
   >({});
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const [bannerComErro, setBannerComErro] = useState<string | null>(null);
+  const [logoComErro, setLogoComErro] = useState<string | null>(null);
+  const [stickerComErro, setStickerComErro] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -138,6 +198,9 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
   }, [lojaId]);
 
   const ehDono = Boolean(usuarioLogado && loja && usuarioLogado.id === loja.userId);
+  const bannerValido = Boolean(loja?.bannerUrl && bannerComErro !== loja.bannerUrl);
+  const logoValida = Boolean(loja?.logoUrl && logoComErro !== loja.logoUrl);
+  const stickerValido = Boolean(loja?.stickerUrl && stickerComErro !== loja.stickerUrl);
 
   const mediaAvaliacoes = useMemo(() => {
     if (avaliacoes.length === 0) return null;
@@ -329,17 +392,18 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
         <main className="flex-1 flex flex-col">
           {/* 1. Hero Banner da Loja conforme Figma Loja (Logado) */}
           <section className="relative w-full h-[360px] sm:h-[440px] md:h-[500px] bg-[#171a17] overflow-hidden">
-            {loja.bannerUrl ? (
+            {bannerValido && loja.bannerUrl ? (
               <Image
                 src={loja.bannerUrl}
                 alt={`Banner de capa da loja ${loja.name}`}
                 fill
                 unoptimized
                 priority
+                onError={() => setBannerComErro(loja.bannerUrl)}
                 className="object-cover"
               />
             ) : (
-              <div className="h-full w-full bg-radial from-[#2a1a4a] to-[#0d0d0d]" />
+              <div className="absolute inset-0 bg-radial from-[#2a1a4a] to-[#0d0d0d]" />
             )}
 
             <div
@@ -370,68 +434,35 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                 </Link>
 
                 {ehDono && (
-                  <div className="flex flex-col items-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setModalEditarAberto(true)}
-                      aria-label="Editar informações da loja"
-                      title="Editar informações da loja"
-                      className="inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                      <span>Editar Loja</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setModalCriarProdutoAberto(true)}
-                      aria-label="Adicionar produto"
-                      title="Adicionar produto"
-                      className="inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2.4}
-                        strokeLinecap="round"
-                        aria-hidden="true"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                      <span>Adicionar Produto</span>
-                    </button>
-                  </div>
+                  <AcoesDonoLoja
+                    aoEditarLoja={() => setModalEditarAberto(true)}
+                    aoAdicionarProduto={() => setModalCriarProdutoAberto(true)}
+                  />
                 )}
               </div>
 
               <div className="flex flex-col items-center text-center my-auto px-4">
-                {(loja.logoUrl || loja.stickerUrl) && (
+                {(loja.logoUrl || stickerValido) && (
                   <div className="relative mb-4 flex items-center justify-center">
                     {loja.logoUrl && (
-                      <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden border-2 border-[#F6F3E4]/80 shadow-xl bg-white/10">
-                        <Image
-                          src={loja.logoUrl}
-                          alt={`Logo da loja ${loja.name}`}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                        />
+                      <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden border-2 border-[#F6F3E4]/80 shadow-xl bg-white/10 flex items-center justify-center">
+                        {logoValida ? (
+                          <Image
+                            src={loja.logoUrl}
+                            alt={`Logo da loja ${loja.name}`}
+                            fill
+                            unoptimized
+                            onError={() => setLogoComErro(loja.logoUrl)}
+                            className="object-cover"
+                          />
+                        ) : (
+                          <span aria-hidden="true" className="text-2xl font-bold text-[#F6F3E4]">
+                            {loja.name.trim().charAt(0).toUpperCase() || "L"}
+                          </span>
+                        )}
                       </div>
                     )}
-                    {loja.stickerUrl && (
+                    {stickerValido && loja.stickerUrl && (
                       <div
                         className={`relative h-10 w-10 rounded-full bg-white p-1 shadow-md overflow-hidden ${
                           loja.logoUrl ? "-ml-4 mt-12" : ""
@@ -442,6 +473,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                           alt="Selo da loja"
                           fill
                           unoptimized
+                          onError={() => setStickerComErro(loja.stickerUrl)}
                           className="object-contain"
                         />
                       </div>
@@ -553,6 +585,31 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                     <p className="text-sm font-medium text-black/70">
                       Vitrine vazia. Novos produtos adicionados à loja aparecerão aqui.
                     </p>
+                    {ehDono && (
+                      <div className="mt-4 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setModalCriarProdutoAberto(true)}
+                          aria-label="Adicionar produto"
+                          title="Adicionar produto"
+                          className={CLASSE_BOTAO_DONO}
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2.4}
+                            strokeLinecap="round"
+                            aria-hidden="true"
+                          >
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          <span>Adicionar Produto</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>
