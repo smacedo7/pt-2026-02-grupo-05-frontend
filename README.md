@@ -28,8 +28,8 @@ A home e as páginas de categoria consultam a API configurada em `NEXT_PUBLIC_AP
 
 Limitações atuais:
 
-- `GET /products` não envia imagens: os cards das listas mostram "Sem imagem". Não é
-  feita uma requisição de detalhe por produto.
+- `GET /products` envia `imageUrl` com a imagem principal do produto (ou `null`, caso em
+  que os cards mostram "Sem imagem"). Não é feita uma requisição de detalhe por produto.
 - A listagem também só envia o id da loja. A home, `/produtos` e a categoria consultam
   `GET /stores` (100 lojas por requisição) para mostrar o nome ou o logo.
 - A página de categoria exibe no máximo 100 produtos, somando a categoria e as

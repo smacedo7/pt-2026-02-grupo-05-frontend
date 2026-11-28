@@ -47,8 +47,7 @@ export async function listarProdutosDaCategoria(
         preco: produto.price,
         estoque: produto.stock,
         disponivel: produto.stock > 0,
-        // A listagem da API não envia imagens.
-        imagemUrl: null,
+        imagemUrl: produto.imageUrl ?? null,
         lojaNome: lojas.get(produto.storeId)?.name,
         categoriaNome: consultada.nome,
         categoriaSlug: categoria.slug,

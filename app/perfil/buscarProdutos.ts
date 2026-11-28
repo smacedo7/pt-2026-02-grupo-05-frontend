@@ -7,12 +7,13 @@ export type ResultadoProdutos =
   | { tipo: "conexao" }
   | { tipo: "erro" };
 
-// Espelho do ProductResponseDto do backend
+// Espelho do ProductListItemDto do backend
 type ProdutoBackend = {
   id: number;
   name: string;
   price: number;
   stock: number;
+  imageUrl?: string | null;
   createdAt: string;
 };
 
@@ -32,7 +33,7 @@ export async function buscarProdutos(limite = 10): Promise<ResultadoProdutos> {
       nome: item.name,
       preco: item.price,
       disponivel: item.stock > 0,
-      imagemUrl: null, // Backend ainda não manda imagem na listagem
+      imagemUrl: item.imageUrl ?? null,
       categoriaSlug: "",
       subcategoriaSlug: "",
       criadoEm: item.createdAt,

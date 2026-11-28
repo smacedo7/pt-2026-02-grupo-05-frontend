@@ -1,4 +1,4 @@
-/** Espelho do ProductResponseDto do backend: é o que GET /products devolve. */
+/** Espelho do ProductListItemDto do backend: é o que GET /products devolve. */
 export type ProdutoApi = {
   id: number;
   storeId: number;
@@ -7,6 +7,7 @@ export type ProdutoApi = {
   description: string | null;
   price: number;
   stock: number;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 };
