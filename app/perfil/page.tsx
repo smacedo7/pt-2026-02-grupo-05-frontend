@@ -250,15 +250,6 @@ export default function PerfilPage() {
                 >
                   Produtos
                 </h2>
-                {estadoProdutos.status === "ok" && estadoProdutos.produtos.length > 0 && (
-                  <Link
-                    href="/perfil/produtos"
-                    aria-label="Ver mais produtos"
-                    className="rounded text-sm font-semibold text-[#6D3BFF] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D3BFF] focus-visible:ring-offset-2"
-                  >
-                    ver mais
-                  </Link>
-                )}
               </div>
 
               {estadoProdutos.status === "carregando" && (
