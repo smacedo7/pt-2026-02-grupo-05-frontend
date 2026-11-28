@@ -8,6 +8,8 @@ import { toast } from "react-toastify";
 import Navbar from "@/components/navbar/Navbar";
 import CardProduto from "@/app/categorias/[slug]/CardProduto";
 import ModalCriarLoja from "@/components/loja/ModalCriarLoja";
+import ModalAlterarSenha from "@/components/perfil/ModalAlterarSenha";
+import ModalEditarPerfil from "@/components/perfil/ModalEditarPerfil";
 import { listarLojasUsuario } from "@/lib/lojas/lojasApi";
 import type { Loja } from "@/lib/lojas/tipos";
 import type { Produto } from "@/lib/categorias/tipos";
@@ -37,6 +39,8 @@ export default function PerfilPage() {
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [carregandoLojas, setCarregandoLojas] = useState(false);
   const [modalCriarLojaAberto, setModalCriarLojaAberto] = useState(false);
+  const [modalDaConta, setModalDaConta] = useState<"perfil" | "senha" | null>(null);
+  const usuarioId = estado.status === "ok" ? estado.usuario.id : null;
 
   // Perfil
   useEffect(() => {
@@ -67,15 +71,15 @@ export default function PerfilPage() {
 
   // Produtos e lojas (só busca depois que o perfil carregar)
   useEffect(() => {
-    if (estado.status !== "ok") return;
-    const usuarioId = estado.usuario.id;
+    if (usuarioId === null) return;
+    const id = usuarioId;
     let cancelado = false;
 
     async function carregarProdutosELojas() {
       setCarregandoLojas(true);
       const [resultado, lojasUsuario] = await Promise.all([
-        buscarProdutos(usuarioId),
-        listarLojasUsuario(usuarioId),
+        buscarProdutos(id),
+        listarLojasUsuario(id),
       ]);
       if (cancelado) return;
 
@@ -97,13 +101,24 @@ export default function PerfilPage() {
     return () => {
       cancelado = true;
     };
-  }, [estado]);
+    // Editar o nome ou a foto não muda as lojas: só a troca de conta recarrega.
+  }, [usuarioId]);
 
   useEffect(() => {
     if (estado.status === "ok") {
       document.title = `Perfil de ${estado.usuario.name} | Stock.io`;
     }
   }, [estado]);
+
+  function aoDeletarConta() {
+    try {
+      localStorage.removeItem("accessToken");
+    } catch {
+      // Sem acesso ao armazenamento não há token salvo para remover.
+    }
+    // Carregamento completo, como no "Sair": descarta os dados da conta em memória.
+    window.location.replace("/");
+  }
 
   const usuario = estado.status === "ok" ? estado.usuario : null;
   const inicial = usuario ? usuario.name.charAt(0).toUpperCase() : "";
@@ -217,13 +232,14 @@ export default function PerfilPage() {
                 </dl>
               </div>
 
-              <Link
-                href="/perfil/editar"
+              <button
+                type="button"
+                onClick={() => setModalDaConta("perfil")}
                 aria-label={`Editar perfil de ${usuario.name}`}
-                className="flex w-full items-center justify-center rounded-full border-2 border-transparent bg-[#6D3BFF] px-8 py-3 text-lg font-medium text-white shadow-md hover:bg-[#5a2ee0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D3BFF] focus-visible:ring-offset-2 sm:mt-6 sm:w-auto lg:mt-8 lg:h-11 lg:w-[324px] lg:py-0 lg:text-xl"
+                className="flex w-full cursor-pointer items-center justify-center rounded-full border-2 border-transparent bg-[#6D3BFF] px-8 py-3 text-lg font-medium text-white shadow-md hover:bg-[#5a2ee0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D3BFF] focus-visible:ring-offset-2 sm:mt-6 sm:w-auto lg:mt-8 lg:h-11 lg:w-[324px] lg:py-0 lg:text-xl"
               >
                 Editar Perfil
-              </Link>
+              </button>
             </section>
 
             <section className="mt-10 lg:mt-16" aria-labelledby="titulo-produtos">
@@ -371,6 +387,20 @@ export default function PerfilPage() {
                 </div>
               )}
             </section>
+
+            <ModalEditarPerfil
+              aberto={modalDaConta === "perfil"}
+              aoFechar={() => setModalDaConta(null)}
+              aoAbrirAlterarSenha={() => setModalDaConta("senha")}
+              aoAtualizar={(perfil) => setEstado({ status: "ok", usuario: perfil })}
+              aoDeletarConta={aoDeletarConta}
+            />
+            <ModalAlterarSenha
+              aberto={modalDaConta === "senha"}
+              aoVoltar={() => setModalDaConta("perfil")}
+              aoFechar={() => setModalDaConta(null)}
+              aoSalvar={() => setModalDaConta(null)}
+            />
 
             <ModalCriarLoja
               aberto={modalCriarLojaAberto}
