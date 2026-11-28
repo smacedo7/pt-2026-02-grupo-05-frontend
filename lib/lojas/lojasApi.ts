@@ -15,9 +15,86 @@ import type {
   ResultadoBuscarLoja,
   ResultadoCriarLoja,
   ResultadoDeletarLoja,
+  ResultadoListarCategorias,
+  ResultadoListarLojas,
 } from "./tipos";
 
 export { obterTokenAutenticado };
+
+const LIMITE_LOJAS_POR_PAGINA = 100;
+const MAX_PAGINAS_LOJAS = 50;
+
+export async function listarTodasLojas(): Promise<ResultadoListarLojas> {
+  const todas: Loja[] = [];
+  const idsVistos = new Set<number>();
+
+  try {
+    for (let pagina = 0; pagina < MAX_PAGINAS_LOJAS; pagina += 1) {
+      const offset = pagina * LIMITE_LOJAS_POR_PAGINA;
+      const { data } = await api.get<Loja[]>("/stores", {
+        params: { limit: LIMITE_LOJAS_POR_PAGINA, offset },
+        timeout: 10000,
+      });
+
+      if (!Array.isArray(data)) {
+        return { tipo: "erro", mensagem: "Resposta inválida ao listar lojas." };
+      }
+
+      for (const loja of data) {
+        if (!idsVistos.has(loja.id)) {
+          idsVistos.add(loja.id);
+          todas.push(loja);
+        }
+      }
+
+      if (data.length < LIMITE_LOJAS_POR_PAGINA) {
+        break;
+      }
+    }
+
+    return { tipo: "sucesso", lojas: todas };
+  } catch (erro) {
+    const classificado = classificarErroAxios(erro, {
+      erroPadrao: "Não foi possível carregar as lojas.",
+    });
+    if (classificado.tipo === "conexao") {
+      return { tipo: "conexao" };
+    }
+    return {
+      tipo: "erro",
+      mensagem:
+        "mensagem" in classificado
+          ? classificado.mensagem
+          : "Não foi possível carregar as lojas.",
+    };
+  }
+}
+
+export async function listarTodasCategorias(): Promise<ResultadoListarCategorias> {
+  try {
+    const { data } = await api.get<CategoriaResumo[]>("/categories", {
+      timeout: 10000,
+    });
+    if (!Array.isArray(data)) {
+      return { tipo: "erro", mensagem: "Resposta inválida ao listar categorias." };
+    }
+    return { tipo: "sucesso", categorias: data };
+  } catch (erro) {
+    const classificado = classificarErroAxios(erro, {
+      erroPadrao: "Não foi possível carregar as categorias.",
+    });
+    if (classificado.tipo === "conexao") {
+      return { tipo: "conexao" };
+    }
+    return {
+      tipo: "erro",
+      mensagem:
+        "mensagem" in classificado
+          ? classificado.mensagem
+          : "Não foi possível carregar as categorias.",
+    };
+  }
+}
 
 export async function buscarLoja(id: number): Promise<ResultadoBuscarLoja> {
   try {

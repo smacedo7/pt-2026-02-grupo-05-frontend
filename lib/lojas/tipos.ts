@@ -61,6 +61,16 @@ export type ResultadoBuscarLoja =
   | { tipo: "conexao" }
   | { tipo: "erro"; mensagem: string };
 
+export type ResultadoListarLojas =
+  | { tipo: "sucesso"; lojas: Loja[] }
+  | { tipo: "conexao" }
+  | { tipo: "erro"; mensagem: string };
+
+export type ResultadoListarCategorias =
+  | { tipo: "sucesso"; categorias: CategoriaResumo[] }
+  | { tipo: "conexao" }
+  | { tipo: "erro"; mensagem: string };
+
 export type ResultadoDeletarLoja =
   | { tipo: "sucesso" }
   | { tipo: "nao-autorizado" }
