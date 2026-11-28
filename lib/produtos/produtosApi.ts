@@ -7,9 +7,11 @@ import {
 } from "@/lib/apiCliente";
 import type {
   AtualizarProdutoPayload,
+  CriarProdutoPayload,
   ProdutoImagem,
   ProdutoLoja,
   ResultadoAtualizarProduto,
+  ResultadoCriarProduto,
   ResultadoDeletarProduto,
 } from "./tipos";
 
@@ -61,6 +63,55 @@ export async function removerImagemProduto(
     `/products/${productId}/images/${imageId}`,
     cabecalhoAuth(token)
   );
+}
+
+export async function criarProduto(
+  payload: CriarProdutoPayload
+): Promise<ResultadoCriarProduto> {
+  const token = obterTokenAutenticado();
+  if (!token) return { tipo: "nao-autorizado" };
+
+  try {
+    const { data } = await api.post<ProdutoLoja>(
+      "/products",
+      payload,
+      cabecalhoAuth(token)
+    );
+    if (!data || typeof data.id !== "number") {
+      return { tipo: "erro", mensagem: "Resposta do servidor inválida." };
+    }
+    return { tipo: "sucesso", produto: data };
+  } catch (erro) {
+    const c = classificarErroAxios(erro, {
+      proibidoPadrao:
+        "Você não tem permissão para adicionar produtos nesta loja (apenas o dono pode adicioná-los).",
+      erroPadrao: "Erro desconhecido ao criar o produto.",
+    });
+
+    if (c.tipo === "validacao") {
+      const { mensagemGeral, campos } = extrairErrosCampos<keyof CriarProdutoPayload>(
+        c.data,
+        [
+          [["name"], "name"],
+          [["category"], "categoryId"],
+          [["description"], "description"],
+          [["price"], "price"],
+          [["stock"], "stock"],
+          [["store"], "storeId"],
+        ]
+      );
+      if (c.data?.code === "CATEGORY_NOT_FOUND") {
+        campos.categoryId = "A subcategoria selecionada não existe.";
+      }
+      if (c.data?.code === "STORE_NOT_FOUND") {
+        campos.storeId = "A loja selecionada não existe.";
+      }
+      return { tipo: "validacao", mensagem: mensagemGeral, campos };
+    }
+
+    if (c.tipo === "conflito") return { tipo: "conflito" };
+    return c;
+  }
 }
 
 export async function atualizarProduto(

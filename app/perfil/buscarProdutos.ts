@@ -1,6 +1,7 @@
 import axios from "axios";
 import { api } from "@/lib/api";
 import type { Produto } from "@/lib/categorias/tipos";
+import { listarImagensProduto } from "@/lib/produtos/produtosApi";
 
 export type ResultadoProdutos =
   | { tipo: "ok"; produtos: Produto[] }
@@ -26,18 +27,28 @@ export async function buscarProdutos(limite = 10): Promise<ResultadoProdutos> {
       return { tipo: "erro" };
     }
 
+    const imagensResultados = await Promise.allSettled(
+      data.map((item) => listarImagensProduto(item.id))
+    );
+
     // Mapeia o DTO do backend para o tipo Produto do CardProduto
-    const produtosMapeados: Produto[] = data.map((item) => ({
-      id: String(item.id),
-      nome: item.name,
-      preco: item.price,
-      disponivel: item.stock > 0,
-      imagemUrl: null, // Backend ainda não manda imagem na listagem
-      categoriaSlug: "",
-      subcategoriaSlug: "",
-      criadoEm: item.createdAt,
-      avaliacao: 0,
-    }));
+    const produtosMapeados: Produto[] = data.map((item, idx) => {
+      const resImg = imagensResultados[idx];
+      const primeiraImagem =
+        resImg?.status === "fulfilled" ? (resImg.value[0]?.imageUrl ?? null) : null;
+
+      return {
+        id: String(item.id),
+        nome: item.name,
+        preco: item.price,
+        disponivel: item.stock > 0,
+        imagemUrl: primeiraImagem,
+        categoriaSlug: "",
+        subcategoriaSlug: "",
+        criadoEm: item.createdAt,
+        avaliacao: 0,
+      };
+    });
 
     return { tipo: "ok", produtos: produtosMapeados };
   } catch (erro) {

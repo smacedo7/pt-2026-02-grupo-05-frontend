@@ -17,6 +17,29 @@ export type ProdutoLoja = {
   updatedAt: string;
 };
 
+export type CriarProdutoPayload = {
+  storeId: number;
+  categoryId: number;
+  name: string;
+  description?: string | null;
+  price: number;
+  stock: number;
+};
+
+export type ResultadoCriarProduto =
+  | { tipo: "sucesso"; produto: ProdutoLoja }
+  | {
+      tipo: "validacao";
+      mensagem: string;
+      campos?: Partial<Record<keyof CriarProdutoPayload, string>>;
+    }
+  | { tipo: "nao-autorizado" }
+  | { tipo: "proibido"; mensagem: string }
+  | { tipo: "nao-encontrado" }
+  | { tipo: "conflito" }
+  | { tipo: "conexao" }
+  | { tipo: "erro"; mensagem: string };
+
 export type AtualizarProdutoPayload = {
   name?: string;
   categoryId?: number;

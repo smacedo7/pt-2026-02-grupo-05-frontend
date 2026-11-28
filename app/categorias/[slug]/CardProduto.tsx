@@ -17,6 +17,7 @@ export default function CardProduto({ produto }: Props) {
             src={produto.imagemUrl}
             alt={`Foto do produto ${produto.nome}`}
             fill
+            unoptimized
             sizes="(min-width: 1280px) 220px, (min-width: 768px) 33vw, (min-width: 360px) 50vw, 100vw"
             className="object-contain p-2"
           />
