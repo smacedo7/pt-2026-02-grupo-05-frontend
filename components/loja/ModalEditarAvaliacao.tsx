@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  BannerErroModal,
-  BotaoDeletarConfirmacao,
-  ModalBase,
-} from "@/components/ui/ModalBase";
+import { toast } from "react-toastify";
+import { BotaoDeletarConfirmacao, ModalBase } from "@/components/ui/ModalBase";
+import SeletorEstrelasAvaliacao from "@/components/loja/SeletorEstrelasAvaliacao";
+import { mensagemErroResultado } from "@/lib/apiCliente";
 import type { AvaliacaoLoja } from "@/lib/avaliacoes/tipos";
 import {
   atualizarAvaliacaoLoja,
@@ -40,28 +39,24 @@ function ModalEditarAvaliacaoDialog({
   aoDeletar,
 }: Omit<ModalEditarAvaliacaoProps, "avaliacao"> & { avaliacao: AvaliacaoLoja }) {
   const [nota, setNota] = useState<number>(avaliacao.rating);
-  const [notaHover, setNotaHover] = useState<number | null>(null);
   const [comentario, setComentario] = useState(avaliacao.comment ?? "");
 
   const [salvando, setSalvando] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [deletando, setDeletando] = useState(false);
-  const [erroGeral, setErroGeral] = useState<string | null>(null);
 
   const ocupado = salvando || deletando;
-  const notaExibida = notaHover ?? nota;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErroGeral(null);
 
     if (nota < 0 || nota > 5) {
-      setErroGeral("Selecione uma nota entre 0 e 5 estrelas.");
+      toast.error("Selecione uma nota entre 0 e 5 estrelas.");
       return;
     }
 
     if (comentario.length > 5000) {
-      setErroGeral("O comentário não pode exceder 5000 caracteres.");
+      toast.error("O comentário não pode exceder 5000 caracteres.");
       return;
     }
 
@@ -78,23 +73,16 @@ function ModalEditarAvaliacaoDialog({
       return;
     }
 
-    if (resultado.tipo === "validacao" || resultado.tipo === "proibido") {
-      setErroGeral(resultado.mensagem);
-    } else if (resultado.tipo === "nao-autorizado") {
-      setErroGeral("Sessão expirada. Faça login novamente.");
-    } else if (resultado.tipo === "nao-encontrado") {
-      setErroGeral("Esta avaliação não foi encontrada no servidor.");
-    } else if (resultado.tipo === "conflito") {
-      setErroGeral("Conflito ao salvar a avaliação. Tente novamente.");
-    } else if (resultado.tipo === "conexao") {
-      setErroGeral("Não foi possível conectar ao servidor.");
-    } else {
-      setErroGeral(resultado.mensagem || "Erro ao atualizar avaliação.");
-    }
+    toast.error(
+      mensagemErroResultado(resultado, {
+        naoEncontrado: "Esta avaliação não foi encontrada no servidor.",
+        conflito: "Conflito ao salvar a avaliação. Tente novamente.",
+        padrao: "Erro ao atualizar avaliação.",
+      })
+    );
   }
 
   async function handleConfirmarExclusao() {
-    setErroGeral(null);
     setDeletando(true);
     const resultado = await deletarAvaliacaoLoja(avaliacao.id);
     setDeletando(false);
@@ -106,16 +94,13 @@ function ModalEditarAvaliacaoDialog({
     }
 
     setConfirmandoExclusao(false);
-    if (resultado.tipo === "proibido") setErroGeral(resultado.mensagem);
-    else if (resultado.tipo === "nao-autorizado")
-      setErroGeral("Sessão expirada. Faça login novamente.");
-    else if (resultado.tipo === "nao-encontrado")
-      setErroGeral("Avaliação já removida.");
-    else if (resultado.tipo === "conflito")
-      setErroGeral("Conflito ao deletar avaliação. Tente novamente.");
-    else if (resultado.tipo === "conexao")
-      setErroGeral("Não foi possível conectar ao servidor.");
-    else setErroGeral(resultado.mensagem || "Erro ao deletar avaliação.");
+    toast.error(
+      mensagemErroResultado(resultado, {
+        naoEncontrado: "Avaliação já removida.",
+        conflito: "Conflito ao deletar avaliação. Tente novamente.",
+        padrao: "Erro ao deletar avaliação.",
+      })
+    );
   }
 
   return (
@@ -127,50 +112,12 @@ function ModalEditarAvaliacaoDialog({
       aoFechar={aoFechar}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        <BannerErroModal mensagem={erroGeral} />
-
-        {/* Seletor de 5 Estrelas conforme Figma */}
-        <div className="flex flex-col items-center gap-2">
-          <div
-            role="radiogroup"
-            aria-label="Nota da avaliação em estrelas"
-            className="flex items-center gap-3"
-            onMouseLeave={() => setNotaHover(null)}
-          >
-            {[1, 2, 3, 4, 5].map((estrela) => {
-              const ativa = estrela <= notaExibida;
-              return (
-                <button
-                  key={estrela}
-                  type="button"
-                  role="radio"
-                  aria-checked={nota === estrela}
-                  aria-label={`${estrela} ${estrela === 1 ? "estrela" : "estrelas"}`}
-                  onClick={() => setNota(estrela)}
-                  onMouseEnter={() => setNotaHover(estrela)}
-                  disabled={ocupado}
-                  className="p-1 transition-transform hover:scale-110 cursor-pointer disabled:opacity-50"
-                >
-                  <svg
-                    className={`h-10 w-10 sm:h-12 sm:w-12 transition-colors ${
-                      ativa
-                        ? "text-[#C6E700] fill-[#C6E700] drop-shadow-xs"
-                        : "text-black/25 fill-transparent"
-                    }`}
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.6}
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                </button>
-              );
-            })}
-          </div>
-          <span className="text-xs font-medium text-black/60">
-            Nota selecionada: {nota} de 5
-          </span>
-        </div>
+        <SeletorEstrelasAvaliacao
+          nota={nota}
+          ocupado={ocupado}
+          tamanho="md"
+          aoSelecionar={setNota}
+        />
 
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between px-3">

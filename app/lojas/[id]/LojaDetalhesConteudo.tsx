@@ -1,17 +1,28 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import Navbar from "@/components/navbar/Navbar";
 import CardProdutoLoja from "@/components/loja/CardProdutoLoja";
+import ModalCriarAvaliacao from "@/components/loja/ModalCriarAvaliacao";
+import ModalCriarProduto from "@/components/loja/ModalCriarProduto";
 import ModalEditarAvaliacao from "@/components/loja/ModalEditarAvaliacao";
+import ModalEditarComentario from "@/components/loja/ModalEditarComentario";
 import ModalEditarLoja from "@/components/loja/ModalEditarLoja";
 import ModalEditarProduto from "@/components/loja/ModalEditarProduto";
 import SecaoAvaliacoesLoja from "@/components/loja/SecaoAvaliacoesLoja";
-import { listarAvaliacoesLoja } from "@/lib/avaliacoes/avaliacoesApi";
-import type { AvaliacaoLoja } from "@/lib/avaliacoes/tipos";
+import {
+  criarComentario,
+  listarAvaliacoesLoja,
+  listarComentariosAvaliacaoLoja,
+} from "@/lib/avaliacoes/avaliacoesApi";
+import type {
+  AvaliacaoLoja,
+  ComentarioAvaliacao,
+} from "@/lib/avaliacoes/tipos";
 import { buscarLoja, obterTokenAutenticado } from "@/lib/lojas/lojasApi";
 import type { Loja } from "@/lib/lojas/tipos";
 import { listarImagensProduto } from "@/lib/produtos/produtosApi";
@@ -38,19 +49,18 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     name?: string;
   } | null>(null);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [modalCriarProdutoAberto, setModalCriarProdutoAberto] = useState(false);
+  const [modalCriarAvaliacaoAberto, setModalCriarAvaliacaoAberto] =
+    useState(false);
   const [produtoEditando, setProdutoEditando] = useState<ProdutoLoja | null>(null);
   const [avaliacaoEditando, setAvaliacaoEditando] =
     useState<AvaliacaoLoja | null>(null);
-  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const [comentarioEditando, setComentarioEditando] =
+    useState<ComentarioAvaliacao | null>(null);
+  const [comentariosPorAvaliacao, setComentariosPorAvaliacao] = useState<
+    Record<number, ComentarioAvaliacao[]>
+  >({});
   const [paginaAtual, setPaginaAtual] = useState(1);
-
-  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     let cancelado = false;
@@ -94,10 +104,15 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
         setLoja(resLoja.loja);
         setAvaliacoes(avaliacoesRes.ratings);
 
-        // Carrega imagens oficiais de cada produto (/products/:id/images) em paralelo
-        const imagensResultados = await Promise.allSettled(
-          produtosRes.map((p) => listarImagensProduto(p.id))
-        );
+        // Carrega imagens dos produtos e comentários das avaliações em paralelo
+        const [imagensResultados, comentariosResultados] = await Promise.all([
+          Promise.allSettled(
+            produtosRes.map((p) => listarImagensProduto(p.id))
+          ),
+          Promise.allSettled(
+            avaliacoesRes.ratings.map((r) => listarComentariosAvaliacaoLoja(r.id))
+          ),
+        ]);
         if (cancelado) return;
 
         const produtosComImagens = produtosRes.map((p, idx) => {
@@ -108,6 +123,14 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
           };
         });
         setProdutos(produtosComImagens);
+
+        const mapaComentarios: Record<number, ComentarioAvaliacao[]> = {};
+        avaliacoesRes.ratings.forEach((r, idx) => {
+          const resCom = comentariosResultados[idx];
+          mapaComentarios[r.id] =
+            resCom.status === "fulfilled" ? resCom.value : [];
+        });
+        setComentariosPorAvaliacao(mapaComentarios);
       } else if (resLoja.tipo === "nao-encontrado") {
         setErro("Loja não encontrada.");
       } else if (resLoja.tipo === "conexao") {
@@ -142,28 +165,27 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     return produtos.slice(inicio, inicio + ITENS_POR_PAGINA);
   }, [produtos, paginaAtual]);
 
-  function mostrarFeedback(mensagem: string) {
-    setMensagemSucesso(mensagem);
-    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-    feedbackTimerRef.current = setTimeout(() => {
-      setMensagemSucesso(null);
-    }, 5000);
-  }
-
   function aoSalvarLoja(lojaAtualizada: Loja) {
     setLoja(lojaAtualizada);
-    mostrarFeedback("Informações da loja atualizadas com sucesso!");
+    toast.success("Informações da loja atualizadas com sucesso!");
   }
 
   function aoDeletarLoja() {
+    toast.success("Loja excluída com sucesso!");
     router.push("/");
+  }
+
+  function aoCriarProduto(produtoCriado: ProdutoLoja) {
+    setProdutos((prev) => [produtoCriado, ...prev]);
+    setPaginaAtual(1);
+    toast.success(`Produto "${produtoCriado.name}" adicionado com sucesso!`);
   }
 
   function aoSalvarProduto(produtoAtualizado: ProdutoLoja) {
     setProdutos((prev) =>
       prev.map((item) => (item.id === produtoAtualizado.id ? produtoAtualizado : item))
     );
-    mostrarFeedback("Produto atualizado com sucesso!");
+    toast.success("Produto atualizado com sucesso!");
   }
 
   function aoDeletarProduto(produtoId: number) {
@@ -173,7 +195,13 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
       setPaginaAtual((atual) => Math.min(atual, novoTotalPaginas));
       return filtrados;
     });
-    mostrarFeedback("Produto excluído com sucesso!");
+    toast.success("Produto excluído com sucesso!");
+  }
+
+  function aoCriarAvaliacao(novaAvaliacao: AvaliacaoLoja) {
+    setAvaliacoes((prev) => [novaAvaliacao, ...prev]);
+    setComentariosPorAvaliacao((prev) => ({ ...prev, [novaAvaliacao.id]: [] }));
+    toast.success("Avaliação publicada com sucesso!");
   }
 
   function aoSalvarAvaliacao(avaliacaoAtualizada: AvaliacaoLoja) {
@@ -182,50 +210,98 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
         item.id === avaliacaoAtualizada.id ? avaliacaoAtualizada : item
       )
     );
-    mostrarFeedback("Avaliação atualizada com sucesso!");
+    toast.success("Avaliação atualizada com sucesso!");
   }
 
   function aoDeletarAvaliacao(avaliacaoId: number) {
     setAvaliacoes((prev) => prev.filter((item) => item.id !== avaliacaoId));
-    mostrarFeedback("Avaliação excluída com sucesso!");
+    setComentariosPorAvaliacao((prev) => {
+      const proximo = { ...prev };
+      delete proximo[avaliacaoId];
+      return proximo;
+    });
+    toast.success("Avaliação excluída com sucesso!");
+  }
+
+  async function aoEnviarComentario(
+    storeRatingId: number,
+    conteudo: string
+  ): Promise<string | null> {
+    const res = await criarComentario({ storeRatingId, content: conteudo });
+    if (res.tipo === "sucesso") {
+      setComentariosPorAvaliacao((prev) => ({
+        ...prev,
+        [storeRatingId]: [...(prev[storeRatingId] ?? []), res.comentario],
+      }));
+      toast.success("Comentário publicado!");
+      return null;
+    }
+    if (res.tipo === "nao-autorizado") {
+      return "Sessão expirada. Faça login novamente para comentar.";
+    }
+    if (res.tipo === "conexao") {
+      return "Não foi possível conectar ao servidor.";
+    }
+    return "mensagem" in res && res.mensagem
+      ? res.mensagem
+      : "Não foi possível enviar o comentário.";
+  }
+
+  function atualizarComentarioNaLista(
+    lista: ComentarioAvaliacao[],
+    atualizado: ComentarioAvaliacao
+  ): ComentarioAvaliacao[] {
+    return lista.map((item) =>
+      item.id === atualizado.id
+        ? { ...atualizado, replies: item.replies ?? atualizado.replies }
+        : {
+            ...item,
+            replies: item.replies
+              ? atualizarComentarioNaLista(item.replies, atualizado)
+              : undefined,
+          }
+    );
+  }
+
+  function removerComentarioDaLista(
+    lista: ComentarioAvaliacao[],
+    comentarioId: number
+  ): ComentarioAvaliacao[] {
+    return lista
+      .filter((item) => item.id !== comentarioId)
+      .map((item) => ({
+        ...item,
+        replies: item.replies
+          ? removerComentarioDaLista(item.replies, comentarioId)
+          : undefined,
+      }));
+  }
+
+  function aoSalvarComentario(comentarioAtualizado: ComentarioAvaliacao) {
+    setComentariosPorAvaliacao((prev) => {
+      const proximo: Record<number, ComentarioAvaliacao[]> = {};
+      for (const [k, lista] of Object.entries(prev)) {
+        proximo[Number(k)] = atualizarComentarioNaLista(lista, comentarioAtualizado);
+      }
+      return proximo;
+    });
+    toast.success("Comentário atualizado com sucesso!");
+  }
+
+  function aoDeletarComentario(comentarioId: number) {
+    setComentariosPorAvaliacao((prev) => {
+      const proximo: Record<number, ComentarioAvaliacao[]> = {};
+      for (const [k, lista] of Object.entries(prev)) {
+        proximo[Number(k)] = removerComentarioDaLista(lista, comentarioId);
+      }
+      return proximo;
+    });
+    toast.success("Comentário excluído com sucesso!");
   }
 
   return (
     <div className="min-h-screen bg-[#F6F3E4] text-[#000000] flex flex-col">
       <Navbar />
-
-      {mensagemSucesso && (
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 pt-4">
-          <div
-            role="status"
-            className="rounded-2xl border border-green-300 bg-green-100 p-4 text-sm font-medium text-green-900 shadow-sm flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <svg
-                className="h-5 w-5 text-green-700 shrink-0"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>{mensagemSucesso}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMensagemSucesso(null)}
-              className="text-green-700 hover:text-green-900 font-bold text-sm px-2 cursor-pointer"
-              aria-label="Fechar aviso"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
 
       {carregando && (
         <div className="flex-1 flex flex-col items-center justify-center py-24 text-center px-4">
@@ -307,26 +383,50 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
                 </Link>
 
                 {ehDono && (
-                  <button
-                    type="button"
-                    onClick={() => setModalEditarAberto(true)}
-                    aria-label="Editar informações da loja"
-                    title="Editar informações da loja"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      aria-hidden="true"
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setModalEditarAberto(true)}
+                      aria-label="Editar informações da loja"
+                      title="Editar informações da loja"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer"
                     >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    <span>Editar Loja</span>
-                  </button>
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span>Editar Loja</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setModalCriarProdutoAberto(true)}
+                      aria-label="Adicionar produto"
+                      title="Adicionar produto"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.4}
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                      >
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                      <span>Adicionar Produto</span>
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -396,10 +496,15 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
           {/* 2. Seção Preta "Reviews e Comentários" */}
           <SecaoAvaliacoesLoja
             nomeLoja={loja.name}
+            donoLojaId={loja.userId}
             avaliacoes={avaliacoes}
+            comentariosPorAvaliacao={comentariosPorAvaliacao}
             mediaAvaliacoes={mediaAvaliacoes}
             usuarioLogadoId={usuarioLogado?.id ?? null}
+            aoAdicionarAvaliacao={() => setModalCriarAvaliacaoAberto(true)}
             aoEditarAvaliacao={setAvaliacaoEditando}
+            aoEnviarComentario={aoEnviarComentario}
+            aoEditarComentario={setComentarioEditando}
           />
 
           {/* 3. Vitrine de Produtos */}
@@ -558,12 +663,27 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
             aoSalvar={aoSalvarLoja}
             aoDeletar={aoDeletarLoja}
           />
+          <ModalCriarProduto
+            storeId={loja.id}
+            storeCategoryId={loja.categoryId}
+            aberto={modalCriarProdutoAberto}
+            aoFechar={() => setModalCriarProdutoAberto(false)}
+            aoCriar={aoCriarProduto}
+          />
           <ModalEditarProduto
             produto={produtoEditando}
             aberto={Boolean(produtoEditando)}
             aoFechar={() => setProdutoEditando(null)}
             aoSalvar={aoSalvarProduto}
             aoDeletar={aoDeletarProduto}
+          />
+          <ModalCriarAvaliacao
+            tipo="loja"
+            alvoId={loja.id}
+            nomeAlvo={loja.name}
+            aberto={modalCriarAvaliacaoAberto}
+            aoFechar={() => setModalCriarAvaliacaoAberto(false)}
+            aoCriar={aoCriarAvaliacao}
           />
           <ModalEditarAvaliacao
             avaliacao={avaliacaoEditando}
@@ -572,6 +692,13 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
             aoFechar={() => setAvaliacaoEditando(null)}
             aoSalvar={aoSalvarAvaliacao}
             aoDeletar={aoDeletarAvaliacao}
+          />
+          <ModalEditarComentario
+            comentario={comentarioEditando}
+            aberto={Boolean(comentarioEditando)}
+            aoFechar={() => setComentarioEditando(null)}
+            aoSalvar={aoSalvarComentario}
+            aoDeletar={aoDeletarComentario}
           />
         </main>
       )}
