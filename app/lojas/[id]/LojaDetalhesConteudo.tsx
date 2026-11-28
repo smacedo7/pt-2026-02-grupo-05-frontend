@@ -25,6 +25,7 @@ import type {
 } from "@/lib/avaliacoes/tipos";
 import { buscarLoja, obterTokenAutenticado } from "@/lib/lojas/lojasApi";
 import type { Loja } from "@/lib/lojas/tipos";
+import { listarProdutosDaLoja } from "@/lib/produtos/listarProdutosDaLoja";
 import type { ProdutoLoja } from "@/lib/produtos/tipos";
 import { api } from "@/lib/api";
 
@@ -33,6 +34,7 @@ type Props = {
 };
 
 const ITENS_POR_PAGINA = 10;
+const LIMITE_PRODUTOS = 50; // o padrão de GET /products
 const CLASSE_BOTAO_DONO =
   "inline-flex items-center gap-2 rounded-full bg-[#6A38F3] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg hover:bg-[#5c2de0] transition-colors focus-visible:outline-2 focus-visible:outline-[#C6E700] cursor-pointer";
 
@@ -117,6 +119,9 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     Record<number, ComentarioAvaliacao[]>
   >({});
   const [paginaAtual, setPaginaAtual] = useState(1);
+  // Falha na consulta não é loja sem produtos: a vitrine mostra o erro.
+  const [erroProdutos, setErroProdutos] = useState(false);
+  const [recarregandoProdutos, setRecarregandoProdutos] = useState(false);
   const [bannerComErro, setBannerComErro] = useState<string | null>(null);
   const [logoComErro, setLogoComErro] = useState<string | null>(null);
   const [stickerComErro, setStickerComErro] = useState<string | null>(null);
@@ -127,6 +132,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     async function carregarDados() {
       setCarregando(true);
       setErro(null);
+      setErroProdutos(false);
 
       if (Number.isNaN(lojaId)) {
         setErro("Identificador de loja inválido.");
@@ -135,7 +141,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
       }
 
       const token = obterTokenAutenticado();
-      const [usuarioRes, resLoja, avaliacoesRes, produtosRes] =
+      const [usuarioRes, resLoja, avaliacoesRes, resProdutos] =
         await Promise.all([
           token
             ? api
@@ -147,10 +153,7 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
             : Promise.resolve(null),
           buscarLoja(lojaId),
           listarAvaliacoesLoja(lojaId),
-          api
-            .get<ProdutoLoja[]>("/products", { params: { storeId: lojaId } })
-            .then((r) => (Array.isArray(r.data) ? r.data : []))
-            .catch(() => [] as ProdutoLoja[]),
+          listarProdutosDaLoja(lojaId, LIMITE_PRODUTOS),
         ]);
 
       if (cancelado) return;
@@ -169,7 +172,8 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
         );
         if (cancelado) return;
 
-        setProdutos(produtosRes);
+        setProdutos(resProdutos.tipo === "ok" ? resProdutos.produtos : []);
+        setErroProdutos(resProdutos.tipo === "erro");
 
         const mapaComentarios: Record<number, ComentarioAvaliacao[]> = {};
         avaliacoesRes.ratings.forEach((r, idx) => {
@@ -215,6 +219,17 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     return produtos.slice(inicio, inicio + ITENS_POR_PAGINA);
   }, [produtos, paginaAtual]);
 
+  async function recarregarProdutos() {
+    setRecarregandoProdutos(true);
+    const resultado = await listarProdutosDaLoja(lojaId, LIMITE_PRODUTOS);
+    if (resultado.tipo === "ok") {
+      setProdutos(resultado.produtos);
+      setPaginaAtual(1);
+    }
+    setErroProdutos(resultado.tipo === "erro");
+    setRecarregandoProdutos(false);
+  }
+
   function aoSalvarLoja(lojaAtualizada: Loja) {
     setLoja(lojaAtualizada);
     toast.success("Informações da loja atualizadas com sucesso!");
@@ -229,6 +244,8 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
     setProdutos((prev) => [produtoCriado, ...prev]);
     setPaginaAtual(1);
     toast.success(`Produto "${produtoCriado.name}" adicionado com sucesso!`);
+    // Sem a lista completa, só o produto novo daria uma vitrine incompleta.
+    if (erroProdutos) recarregarProdutos();
   }
 
   function aoSalvarProduto(produtoAtualizado: ProdutoLoja) {
@@ -529,174 +546,195 @@ export default function LojaDetalhesConteudo({ lojaId }: Props) {
           {/* 3. Vitrine de Produtos */}
           <section className="w-full bg-[#F6F3E4] py-12 sm:py-16 flex-1">
             <div className="mx-auto max-w-7xl px-4 sm:px-8 space-y-14">
-              <div>
-                <div className="flex items-baseline justify-between mb-6">
-                  <h2 className="text-2xl sm:text-3xl font-medium text-black">
-                    Produtos{" "}
-                    <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
-                      melhor avaliados
-                    </span>
-                  </h2>
-                  {produtos.length > 5 && (
-                    <a
-                      href="#todos-produtos-loja"
-                      className="text-sm font-medium text-[#6A38F3] hover:underline"
-                    >
-                      ver mais
-                    </a>
-                  )}
+              {erroProdutos ? (
+                <div
+                  role="alert"
+                  className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center"
+                >
+                  <p className="text-sm font-medium text-red-800">
+                    Não foi possível carregar os produtos desta loja.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={recarregarProdutos}
+                    disabled={recarregandoProdutos}
+                    className={`mt-4 ${CLASSE_BOTAO_DONO} disabled:cursor-default disabled:opacity-60`}
+                  >
+                    {recarregandoProdutos ? "Carregando..." : "Tentar novamente"}
+                  </button>
                 </div>
-
-                {produtosDestaque.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
-                    <p className="text-sm font-medium text-black/70">
-                      Nenhum produto cadastrado para esta loja até o momento.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    {produtosDestaque.map((produto) => (
-                      <CardProdutoLoja
-                        key={`destaque-${produto.id}`}
-                        produto={produto}
-                        ehDono={ehDono}
-                        aoEditar={setProdutoEditando}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div id="todos-produtos-loja">
-                <div className="flex items-baseline justify-between mb-6">
-                  <h2 className="text-2xl sm:text-3xl font-medium text-black">
-                    Produtos{" "}
-                    <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
-                      de {loja.name}
-                    </span>
-                  </h2>
-                  <span className="text-xs font-semibold text-black/60">
-                    {produtos.length} {produtos.length === 1 ? "item" : "itens"}
-                  </span>
-                </div>
-
-                {produtos.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
-                    <p className="text-sm font-medium text-black/70">
-                      Vitrine vazia. Novos produtos adicionados à loja aparecerão aqui.
-                    </p>
-                    {ehDono && (
-                      <div className="mt-4 flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setModalCriarProdutoAberto(true)}
-                          aria-label="Adicionar produto"
-                          title="Adicionar produto"
-                          className={CLASSE_BOTAO_DONO}
+              ) : (
+                <>
+                  <div>
+                    <div className="flex items-baseline justify-between mb-6">
+                      <h2 className="text-2xl sm:text-3xl font-medium text-black">
+                        Produtos{" "}
+                        <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
+                          melhor avaliados
+                        </span>
+                      </h2>
+                      {produtos.length > 5 && (
+                        <a
+                          href="#todos-produtos-loja"
+                          className="text-sm font-medium text-[#6A38F3] hover:underline"
                         >
-                          <svg
-                            className="h-4 w-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.4}
-                            strokeLinecap="round"
-                            aria-hidden="true"
-                          >
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                          </svg>
-                          <span>Adicionar Produto</span>
-                        </button>
+                          ver mais
+                        </a>
+                      )}
+                    </div>
+
+                    {produtosDestaque.length === 0 ? (
+                      <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
+                        <p className="text-sm font-medium text-black/70">
+                          Nenhum produto cadastrado para esta loja até o momento.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                        {produtosDestaque.map((produto) => (
+                          <CardProdutoLoja
+                            key={`destaque-${produto.id}`}
+                            produto={produto}
+                            ehDono={ehDono}
+                            aoEditar={setProdutoEditando}
+                          />
+                        ))}
                       </div>
                     )}
                   </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                      {produtosPaginados.map((produto) => (
-                        <CardProdutoLoja
-                          key={`grade-${produto.id}`}
-                          produto={produto}
-                          ehDono={ehDono}
-                          aoEditar={setProdutoEditando}
-                        />
-                      ))}
+
+                  <div id="todos-produtos-loja">
+                    <div className="flex items-baseline justify-between mb-6">
+                      <h2 className="text-2xl sm:text-3xl font-medium text-black">
+                        Produtos{" "}
+                        <span className="text-sm sm:text-base font-normal text-black/80 lowercase">
+                          de {loja.name}
+                        </span>
+                      </h2>
+                      <span className="text-xs font-semibold text-black/60">
+                        {produtos.length} {produtos.length === 1 ? "item" : "itens"}
+                      </span>
                     </div>
 
-                    {totalPaginas > 1 && (
-                      <nav
-                        aria-label="Paginação de produtos da loja"
-                        className="mt-10 flex items-center justify-center gap-6"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
-                          disabled={paginaAtual === 1}
-                          aria-label="Página anterior"
-                          className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
-                        >
-                          <svg
-                            className="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="15 18 9 12 15 6" />
-                          </svg>
-                        </button>
-
-                        <div className="flex items-center gap-5">
-                          {Array.from({ length: totalPaginas }).map((_, idx) => {
-                            const num = idx + 1;
-                            const ativa = num === paginaAtual;
-                            return (
-                              <button
-                                key={num}
-                                type="button"
-                                onClick={() => setPaginaAtual(num)}
-                                aria-current={ativa ? "page" : undefined}
-                                className={`text-2xl sm:text-3xl font-medium transition-colors cursor-pointer ${
-                                  ativa
-                                    ? "text-[#6A38F3] underline underline-offset-4"
-                                    : "text-black/70 hover:text-black"
-                                }`}
+                    {produtos.length === 0 ? (
+                      <div className="rounded-3xl border border-dashed border-black/20 bg-white/60 p-8 text-center">
+                        <p className="text-sm font-medium text-black/70">
+                          Vitrine vazia. Novos produtos adicionados à loja aparecerão aqui.
+                        </p>
+                        {ehDono && (
+                          <div className="mt-4 flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => setModalCriarProdutoAberto(true)}
+                              aria-label="Adicionar produto"
+                              title="Adicionar produto"
+                              className={CLASSE_BOTAO_DONO}
+                            >
+                              <svg
+                                className="h-4 w-4"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.4}
+                                strokeLinecap="round"
+                                aria-hidden="true"
                               >
-                                {num}
-                              </button>
-                            );
-                          })}
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                              </svg>
+                              <span>Adicionar Produto</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                          {produtosPaginados.map((produto) => (
+                            <CardProdutoLoja
+                              key={`grade-${produto.id}`}
+                              produto={produto}
+                              ehDono={ehDono}
+                              aoEditar={setProdutoEditando}
+                            />
+                          ))}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPaginaAtual((p) => Math.min(totalPaginas, p + 1))
-                          }
-                          disabled={paginaAtual === totalPaginas}
-                          aria-label="Próxima página"
-                          className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
-                        >
-                          <svg
-                            className="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                        {totalPaginas > 1 && (
+                          <nav
+                            aria-label="Paginação de produtos da loja"
+                            className="mt-10 flex items-center justify-center gap-6"
                           >
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </button>
-                      </nav>
+                            <button
+                              type="button"
+                              onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+                              disabled={paginaAtual === 1}
+                              aria-label="Página anterior"
+                              className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
+                            >
+                              <svg
+                                className="h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="15 18 9 12 15 6" />
+                              </svg>
+                            </button>
+
+                            <div className="flex items-center gap-5">
+                              {Array.from({ length: totalPaginas }).map((_, idx) => {
+                                const num = idx + 1;
+                                const ativa = num === paginaAtual;
+                                return (
+                                  <button
+                                    key={num}
+                                    type="button"
+                                    onClick={() => setPaginaAtual(num)}
+                                    aria-current={ativa ? "page" : undefined}
+                                    className={`text-2xl sm:text-3xl font-medium transition-colors cursor-pointer ${
+                                      ativa
+                                        ? "text-[#6A38F3] underline underline-offset-4"
+                                        : "text-black/70 hover:text-black"
+                                    }`}
+                                  >
+                                    {num}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPaginaAtual((p) => Math.min(totalPaginas, p + 1))
+                              }
+                              disabled={paginaAtual === totalPaginas}
+                              aria-label="Próxima página"
+                              className="p-2 text-black disabled:opacity-30 hover:text-[#6A38F3] transition-colors cursor-pointer disabled:cursor-default"
+                            >
+                              <svg
+                                className="h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </button>
+                          </nav>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
