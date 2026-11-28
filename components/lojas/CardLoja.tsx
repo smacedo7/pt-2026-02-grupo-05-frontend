@@ -39,12 +39,12 @@ export default function CardLoja({ loja, categoriaNome }: Props) {
         )}
       </div>
 
-      <h2 className="mt-3 line-clamp-2 break-words text-base font-medium leading-snug text-black transition-colors group-hover:text-[#6a38ff]">
+      <h2 className="mt-3 line-clamp-2 w-full break-words text-base font-medium leading-snug text-black transition-colors group-hover:text-[#6a38ff]">
         {loja.name}
       </h2>
 
       {categoriaNome && (
-        <p className="mt-0.5 line-clamp-1 text-xs lowercase text-[#6a38ff]">
+        <p className="mt-0.5 line-clamp-1 w-full break-all text-xs lowercase text-[#6a38ff]">
           {categoriaNome}
         </p>
       )}
