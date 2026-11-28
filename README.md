@@ -28,14 +28,17 @@ A home e as páginas de categoria consultam a API configurada em `NEXT_PUBLIC_AP
 
 Limitações atuais:
 
-- `GET /products` não envia imagens nem o nome da loja: os cards mostram "Sem imagem" e
-  "Loja não informada". Não é feita uma requisição de detalhe por produto.
+- `GET /products` não envia imagens: os cards das listas mostram "Sem imagem". Não é
+  feita uma requisição de detalhe por produto.
+- A listagem também só envia o id da loja. A home, `/produtos` e a categoria consultam
+  `GET /stores` (100 lojas por requisição) para mostrar o nome ou o logo.
 - A página de categoria exibe no máximo 100 produtos, somando a categoria e as
   subcategorias diretas. Busca, filtros e ordenação consideram apenas esses produtos.
   Ao atingir o limite, a página avisa.
 - Subcategorias de segundo nível em diante não são consultadas.
-- A home mostra até 5 produtos por categoria raiz, sem incluir subcategorias, e a busca
-  da home considera apenas os produtos carregados.
+- Por categoria raiz, com as subcategorias diretas, a home mostra até 5 produtos e
+  `/produtos` até 10. A busca dessas telas considera apenas os produtos carregados (até
+  100 por categoria ou subcategoria).
 - Não há avaliação de produto na API, por isso a categoria não exibe nem ordena por
   avaliação.
 

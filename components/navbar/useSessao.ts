@@ -53,15 +53,36 @@ export function useSessao() {
       }
     }
 
-    verificarSessao();
+    // O botão voltar pode devolver a página inteira do cache do navegador, ainda
+    // com a sessão anterior na tela. Se o token mudou, a página é recarregada.
+    let tokenNaTela = lerToken();
+    function aoRestaurarPagina(evento: PageTransitionEvent) {
+      if (evento.persisted && lerToken() !== tokenNaTela) {
+        window.location.reload();
+      }
+    }
+    window.addEventListener("pageshow", aoRestaurarPagina);
+
+    async function verificar() {
+      await verificarSessao();
+      // Se um token expirado foi limpo no 401 durante esta carga, não dispara reload falso ao voltar.
+      if (!cancelado && !lerToken()) {
+        tokenNaTela = null;
+      }
+    }
+
+    verificar();
     return () => {
       cancelado = true;
+      window.removeEventListener("pageshow", aoRestaurarPagina);
     };
   }, []);
 
   function encerrarSessao() {
     removerToken();
-    setEstado("deslogado");
+    // Carregamento completo de propósito: o Next.js mantém telas visitadas em
+    // memória, e router.replace deixaria nelas os dados de quem acabou de sair.
+    window.location.replace("/");
   }
 
   return { estado, encerrarSessao };
