@@ -27,6 +27,7 @@ export default function MenuFiltrosLojas({
 }: Props) {
   const [aberto, setAberto] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const botaoRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!aberto) return;
@@ -42,6 +43,10 @@ export default function MenuFiltrosLojas({
 
     function aoPressionarTecla(evento: KeyboardEvent) {
       if (evento.key === "Escape") {
+        // O painel some: quem estava nele volta ao botão, e não ao início da página.
+        if (containerRef.current?.contains(document.activeElement)) {
+          botaoRef.current?.focus();
+        }
         setAberto(false);
       }
     }
@@ -69,6 +74,7 @@ export default function MenuFiltrosLojas({
   return (
     <div ref={containerRef} className="relative w-full sm:w-[500px]">
       <button
+        ref={botaoRef}
         type="button"
         aria-expanded={aberto}
         aria-controls="painel-filtros-lojas"
@@ -170,6 +176,7 @@ export default function MenuFiltrosLojas({
                   type="button"
                   onClick={() => {
                     aoLimparFiltros();
+                    botaoRef.current?.focus();
                     setAberto(false);
                   }}
                   className="cursor-pointer rounded text-xs font-semibold text-[#6a38ff] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff]"
