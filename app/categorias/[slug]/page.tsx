@@ -1,53 +1,94 @@
 import type { Metadata } from "next";
+import { cache, Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/navbar/Navbar";
+import { buscarCategoriaPorSlug } from "@/lib/categorias/buscarCategoriaPorSlug";
 import {
-  buscarCategoria,
+  LIMITE_PRODUTOS_CATEGORIA,
   listarProdutosDaCategoria,
-  listarSlugsDeCategorias,
-} from "@/lib/categorias/dados-demonstrativos";
+} from "@/lib/categorias/listarProdutosDaCategoria";
+import type { Categoria } from "@/lib/categorias/tipos";
+import { mensagemFalhaProdutos } from "@/app/listarProdutos";
 import CatalogoCategoria from "./CatalogoCategoria";
 
 type Parametros = { params: Promise<{ slug: string }> };
 
-// Rota bloqueante: a página só responde depois de resolver params e a categoria.
-// Assim notFound() vira HTTP 404 em vez de um shell 200 transmitido antes da busca.
-// As slugs conhecidas são pré-renderizadas no build. Slugs desconhecidas são
-// barradas antes da renderização pelo proxy.ts, que responde 404.
-export function generateStaticParams() {
-  return listarSlugsDeCategorias().map((slug) => ({ slug }));
-}
+// Uma consulta por renderização, compartilhada entre o título e a página.
+const buscarCategoria = cache(buscarCategoriaPorSlug);
+
+// A API não tem campo para a frase do banner. Ficam aqui as frases que já existiam.
+const CHAMADAS = new Map([["tecnologia", "O universo da tecnologia em um só lugar"]]);
 
 export async function generateMetadata({ params }: Parametros): Promise<Metadata> {
   const { slug } = await params;
-  const categoria = await buscarCategoria(slug);
+  const resultado = await buscarCategoria(slug);
 
+  if (resultado.tipo === "ok") {
+    return { title: `${resultado.categoria.name} | Stock.io` };
+  }
   return {
-    title: categoria ? `${categoria.nome} | Stock.io` : "Categoria não encontrada | Stock.io",
+    title:
+      resultado.tipo === "nao-encontrada"
+        ? "Categoria não encontrada | Stock.io"
+        : "Categoria | Stock.io",
   };
 }
 
-export default async function PaginaCategoria({ params }: Parametros) {
-  const { slug } = await params;
-  const categoria = await buscarCategoria(slug);
-
-  if (!categoria) {
-    notFound();
-  }
-
-  const produtos = await listarProdutosDaCategoria(categoria.slug);
-
+export default function PaginaCategoria({ params }: Parametros) {
   return (
     <div className="flex min-h-screen flex-col bg-creme font-sans text-preto">
       <Navbar />
+      <Suspense
+        fallback={
+          <p role="status" className="flex-1 px-4 py-16 text-center text-lg">
+            Carregando categoria...
+          </p>
+        }
+      >
+        <ConteudoCategoria params={params} />
+      </Suspense>
+    </div>
+  );
+}
 
+async function ConteudoCategoria({ params }: Parametros) {
+  const { slug } = await params;
+  const resultado = await buscarCategoria(slug);
+
+  if (resultado.tipo === "nao-encontrada") {
+    notFound();
+  }
+
+  if (resultado.tipo === "erro") {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+        <AvisoDeErro slug={slug} mensagem="Não foi possível carregar a categoria." />
+      </main>
+    );
+  }
+
+  const categoria: Categoria = {
+    slug: resultado.categoria.slug,
+    nome: resultado.categoria.name,
+    chamada: CHAMADAS.get(resultado.categoria.slug),
+    subcategorias: resultado.categoria.subcategories.map((item) => ({
+      slug: item.slug,
+      nome: item.name,
+    })),
+  };
+  const consulta = await listarProdutosDaCategoria(resultado.categoria);
+
+  return (
+    <>
       <header className="overflow-hidden bg-preto text-creme">
         <div className="mx-auto flex w-full max-w-6xl items-end justify-between gap-4 px-4 pt-12 md:px-10 md:pt-20">
           <div className="min-w-0 flex-1 pb-12 md:pb-20">
             <p className="text-sm font-semibold uppercase tracking-widest text-creme/70">Categoria</p>
             <h1 className="mt-2 text-4xl font-extrabold tracking-tight md:text-6xl">{categoria.nome}</h1>
-            <p className="mt-4 max-w-xl text-xl leading-snug md:text-3xl">{categoria.chamada}</p>
+            {categoria.chamada && (
+              <p className="mt-4 max-w-xl text-xl leading-snug md:text-3xl">{categoria.chamada}</p>
+            )}
           </div>
 
           <Image
@@ -63,8 +104,39 @@ export default async function PaginaCategoria({ params }: Parametros) {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-10 md:py-12">
-        <CatalogoCategoria categoria={categoria} produtos={produtos} />
+        {consulta.tipo === "ok" ? (
+          <>
+            {consulta.limiteAtingido && (
+              <p className="mb-6 rounded-2xl bg-white px-4 py-3 text-sm text-preto">
+                Esta página exibe no máximo {LIMITE_PRODUTOS_CATEGORIA} produtos. A busca e a
+                ordenação consideram apenas os produtos exibidos.
+              </p>
+            )}
+            <CatalogoCategoria categoria={categoria} produtos={consulta.produtos} />
+          </>
+        ) : (
+          <div className="flex justify-center py-8">
+            <AvisoDeErro slug={categoria.slug} mensagem={mensagemFalhaProdutos(consulta.tipo)} />
+          </div>
+        )}
       </main>
+    </>
+  );
+}
+
+function AvisoDeErro({ slug, mensagem }: { slug: string; mensagem: string }) {
+  return (
+    <div className="flex flex-col items-center gap-4 text-center">
+      <p role="alert" className="text-lg font-semibold">
+        {mensagem}
+      </p>
+      {/* Link comum: recarrega a página e consulta a API de novo. */}
+      <a
+        href={`/categorias/${slug}`}
+        className="rounded-full bg-roxo px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-roxo"
+      >
+        Tentar novamente
+      </a>
     </div>
   );
 }

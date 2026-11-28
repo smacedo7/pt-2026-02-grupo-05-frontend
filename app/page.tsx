@@ -7,57 +7,94 @@ import Navbar from '@/components/navbar/Navbar';
 import BarraBusca from '@/components/home/BarraBusca';
 import CarrosselCategorias from '@/components/home/CarrosselCategorias';
 import { ProductCard, ProductSkeleton } from '@/components/home/CardProdutoHome';
-import { CATEGORIAS_HOME, type CategoriaHome } from '@/components/home/categorias';
+import {
+  prepararCategoriasHome,
+  type CategoriaHome,
+  type EstadoListaCategorias,
+} from '@/components/home/categorias';
 import { correspondeBuscaPorNome, normalizarTextoBusca } from '@/lib/categorias/catalogo';
-import { listarProdutos, type Produto } from './listarProdutos';
+import { listarCategoriasRaiz } from '@/lib/categorias/listarCategoriasRaiz';
+import type { ProdutoApi } from '@/lib/produtos/tipos';
+import { listarProdutosDaCategoriaHome, mensagemFalhaProdutos } from './listarProdutos';
 
 type EstadoCategoria =
   | { status: 'carregando' }
-  | { status: 'ok'; produtos: Produto[] }
+  | { status: 'ok'; produtos: ProdutoApi[] }
   | { status: 'erro'; mensagem: string };
 
 type SecaoCategoria = {
   categoria: CategoriaHome;
   estado: EstadoCategoria;
-  produtosVisiveis: Produto[];
+  produtosVisiveis: ProdutoApi[];
 };
 
 const MENSAGEM_CONEXAO =
   'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
-const MENSAGEM_ERRO = 'Não foi possível carregar os produtos.';
+const MENSAGEM_ERRO_CATEGORIAS = 'Não foi possível carregar as categorias.';
+
+function BotaoTentarNovamente({ aoClicar }: { aoClicar: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={aoClicar}
+      className="cursor-pointer rounded-full bg-roxo px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[#5c2de0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+    >
+      Tentar novamente
+    </button>
+  );
+}
 
 export default function Home() {
   const buscaRef = useRef<HTMLInputElement>(null);
   const produtosRef = useRef<HTMLElement>(null);
   const [textoBusca, setTextoBusca] = useState('');
-  const [estados, setEstados] = useState<Record<string, EstadoCategoria>>(() =>
-    Object.fromEntries(
-      CATEGORIAS_HOME.map((cat) => [cat.slug, { status: 'carregando' } as EstadoCategoria]),
-    ),
-  );
+  const [lista, setLista] = useState<EstadoListaCategorias>({ status: 'carregando' });
+  const [tentativa, setTentativa] = useState(0);
+  const [estados, setEstados] = useState<Record<string, EstadoCategoria>>({});
 
   useEffect(() => {
     let cancelado = false;
 
-    CATEGORIAS_HOME.forEach(async (cat) => {
-      const resultado = await listarProdutos(cat.slug);
+    async function carregar() {
+      const resposta = await listarCategoriasRaiz();
       if (cancelado) return;
-      setEstados((prev) => ({
-        ...prev,
-        [cat.slug]:
-          resultado.tipo === 'ok'
-            ? { status: 'ok', produtos: resultado.produtos }
-            : {
-                status: 'erro',
-                mensagem: resultado.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO,
-              },
-      }));
-    });
+
+      if (resposta.tipo !== 'ok') {
+        setLista({
+          status: 'erro',
+          mensagem: resposta.tipo === 'conexao' ? MENSAGEM_CONEXAO : MENSAGEM_ERRO_CATEGORIAS,
+        });
+        return;
+      }
+
+      const categorias = prepararCategoriasHome(resposta.categorias);
+      setLista({ status: 'ok', categorias });
+
+      categorias.forEach(async (cat) => {
+        const resultado = await listarProdutosDaCategoriaHome(cat);
+        if (cancelado) return;
+        setEstados((prev) => ({
+          ...prev,
+          [cat.slug]:
+            resultado.tipo === 'ok'
+              ? { status: 'ok', produtos: resultado.produtos }
+              : { status: 'erro', mensagem: mensagemFalhaProdutos(resultado.tipo) },
+        }));
+      });
+    }
+
+    carregar();
 
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [tentativa]);
+
+  const tentarNovamente = () => {
+    setLista({ status: 'carregando' });
+    setEstados({});
+    setTentativa((anterior) => anterior + 1);
+  };
 
   const termoNormalizado = normalizarTextoBusca(textoBusca);
   const buscando = termoNormalizado !== '';
@@ -67,10 +104,11 @@ export default function Home() {
     let totalOk = 0;
     let totalErros = 0;
     let totalEncontrados = 0;
-    let mensagemErroGeral = MENSAGEM_ERRO;
+    let mensagemErroGeral = mensagemFalhaProdutos('erro');
     const visiveis: SecaoCategoria[] = [];
+    const categorias = lista.status === 'ok' ? lista.categorias : [];
 
-    for (const categoria of CATEGORIAS_HOME) {
+    for (const categoria of categorias) {
       const estado = estados[categoria.slug] ?? { status: 'carregando' };
 
       if (estado.status === 'carregando') {
@@ -108,10 +146,12 @@ export default function Home() {
     const todasComErro = !carregando && totalOk === 0 && totalErros > 0;
     return {
       secoesVisiveis: visiveis,
-      semResultados: buscando && !carregando && !todasComErro && totalEncontrados === 0,
+      // Sem categorias carregadas não há o que buscar nem como afirmar que não há resultado.
+      semResultados:
+        buscando && categorias.length > 0 && !carregando && !todasComErro && totalEncontrados === 0,
       erroNaBusca: buscando && todasComErro ? mensagemErroGeral : null,
     };
-  }, [estados, buscando, termoNormalizado]);
+  }, [lista, estados, buscando, termoNormalizado]);
 
   const rolarParaResultados = () => {
     if (buscando) {
@@ -163,7 +203,7 @@ export default function Home() {
             inputRef={buscaRef}
           />
 
-          <CarrosselCategorias categorias={CATEGORIAS_HOME} />
+          <CarrosselCategorias lista={lista} aoTentarNovamente={tentarNovamente} />
 
           <section
             ref={produtosRef}
@@ -188,9 +228,12 @@ export default function Home() {
             </div>
 
             {erroNaBusca && (
-              <p role="alert" className="text-center text-sm text-red-500">
-                {erroNaBusca}
-              </p>
+              <div className="flex flex-col items-center gap-3 text-center">
+                <p role="alert" className="text-sm text-red-500">
+                  {erroNaBusca}
+                </p>
+                <BotaoTentarNovamente aoClicar={tentarNovamente} />
+              </div>
             )}
 
             {secoesVisiveis.map(({ categoria, estado, produtosVisiveis }) => (
@@ -221,9 +264,12 @@ export default function Home() {
                     ))}
 
                   {estado.status === 'erro' && (
-                    <p role="alert" className="col-span-full text-center text-sm text-red-500">
-                      {estado.mensagem}
-                    </p>
+                    <div className="col-span-full flex flex-col items-center gap-3 text-center">
+                      <p role="alert" className="text-sm text-red-500">
+                        {estado.mensagem}
+                      </p>
+                      <BotaoTentarNovamente aoClicar={tentarNovamente} />
+                    </div>
                   )}
 
                   {estado.status === 'ok' && estado.produtos.length === 0 && (
@@ -235,7 +281,7 @@ export default function Home() {
                   {estado.status === 'ok' &&
                     produtosVisiveis.map((prod, index) => (
                       <div key={prod.id} className={index >= 4 ? 'hidden md:block' : ''}>
-                        <ProductCard produto={prod} />
+                        <ProductCard produto={prod} categoriaNome={categoria.nome} />
                       </div>
                     ))}
                 </div>

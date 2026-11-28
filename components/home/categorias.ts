@@ -1,26 +1,33 @@
+import type { CategoriaApi } from '@/lib/categorias/tipos';
+
 export type CategoriaHome = {
+  id: number;
   nome: string;
   slug: string;
-  imagem: string;
+  imagem: string | null;
 };
 
-// Gera o slug da categoria: 'Farmácia' → 'farmacia', 'Eletrônicos' → 'eletronicos'
-function slugify(nome: string): string {
-  return nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+export type EstadoListaCategorias =
+  | { status: 'carregando' }
+  | { status: 'ok'; categorias: CategoriaHome[] }
+  | { status: 'erro'; mensagem: string };
+
+// A API não guarda imagem de categoria: a home escolhe pelo slug.
+// A ordem desta lista é a ordem de exibição.
+const IMAGENS_POR_SLUG = new Map(
+  ['mercado', 'farmacia', 'beleza', 'moda', 'eletronicos', 'jogos', 'brinquedos', 'casa'].map(
+    (slug) => [slug, `/imagens/categorias/${slug}.png`],
+  ),
+);
+const ORDEM = [...IMAGENS_POR_SLUG.keys()];
+
+/** Ordena as categorias da API; as sem posição definida ficam no fim, na ordem recebida. */
+export function prepararCategoriasHome(categorias: CategoriaApi[]): CategoriaHome[] {
+  const posicao = (slug: string) => {
+    const indice = ORDEM.indexOf(slug);
+    return indice === -1 ? ORDEM.length : indice;
+  };
+  return categorias
+    .map(({ id, name, slug }) => ({ id, nome: name, slug, imagem: IMAGENS_POR_SLUG.get(slug) ?? null }))
+    .sort((a, b) => posicao(a.slug) - posicao(b.slug));
 }
-
-const NOMES_IMAGENS_CATEGORIAS: ReadonlyArray<{ nome: string; imagem: string }> = [
-  { nome: 'Mercado', imagem: '/imagens/categorias/mercado.png' },
-  { nome: 'Farmácia', imagem: '/imagens/categorias/farmacia.png' },
-  { nome: 'Beleza', imagem: '/imagens/categorias/beleza.png' },
-  { nome: 'Moda', imagem: '/imagens/categorias/moda.png' },
-  { nome: 'Eletrônicos', imagem: '/imagens/categorias/eletronicos.png' },
-  { nome: 'Jogos', imagem: '/imagens/categorias/jogos.png' },
-  { nome: 'Brinquedos', imagem: '/imagens/categorias/brinquedos.png' },
-  { nome: 'Casa', imagem: '/imagens/categorias/casa.png' },
-];
-
-export const CATEGORIAS_HOME: readonly CategoriaHome[] = NOMES_IMAGENS_CATEGORIAS.map((cat) => ({
-  ...cat,
-  slug: slugify(cat.nome),
-}));

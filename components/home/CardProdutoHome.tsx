@@ -1,5 +1,6 @@
-import Image from 'next/image';
-import type { Produto } from '@/app/listarProdutos';
+import type { ProdutoApi } from '@/lib/produtos/tipos';
+
+const formatadorPreco = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 /** Placeholder visual exibido enquanto os produtos de uma categoria carregam. */
 export function ProductSkeleton() {
@@ -23,72 +24,55 @@ export function ProductSkeleton() {
 }
 
 /** Card de produto exibido nas vitrines da página inicial. */
-export function ProductCard({ produto }: { produto: Produto }) {
-  // para o exemplo da farmácia e mercado
-  const badgeColor =
-    produto.companyLogo === 'CJR'
-      ? 'bg-[#004b6e]'
-      : produto.companyLogo === 'NATU'
-        ? 'bg-[#e04a6e]'
-        : 'bg-gray-200';
-
-  const precoNumerico = Number(produto.price);
-  const precoFormatado = Number.isFinite(precoNumerico)
-    ? precoNumerico.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    : '--,--';
+export function ProductCard({
+  produto,
+  categoriaNome,
+}: {
+  produto: ProdutoApi;
+  categoriaNome: string;
+}) {
+  const precoFormatado = formatadorPreco.format(produto.price);
+  const disponivel = produto.stock > 0;
+  const estoque = disponivel ? `${produto.stock} em estoque` : 'Indisponível';
 
   const nomeAcessivel = [
-    produto.name || 'Produto sem nome',
-    `R$${precoFormatado} por ${produto.unit || 'unidade'}`,
-    produto.available ? 'Disponível' : 'Indisponível',
+    produto.name,
+    precoFormatado,
+    estoque,
+    `categoria ${categoriaNome}`,
+    'loja não informada',
+    'sem imagem',
   ].join(', ');
 
   return (
     <button
       type="button"
       aria-label={nomeAcessivel}
-      className="group relative flex h-[260px] w-full cursor-pointer flex-col justify-between rounded-2xl bg-white p-4 text-left shadow-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
+      className="group relative flex h-full min-h-[260px] w-full cursor-pointer flex-col justify-between rounded-2xl bg-white p-4 text-left shadow-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
     >
-      {produto.companyLogo && (
-        <div
-          role="img"
-          aria-label={`Loja ${produto.companyLogo}`}
-          className={`absolute right-4 top-4 z-10 flex h-10 w-10 ${badgeColor} items-center justify-center overflow-hidden rounded-full border-2 border-white text-[10px] font-bold text-white shadow-sm`}
-        >
-          <span aria-hidden="true">{produto.companyLogo}</span>
-        </div>
-      )}
-
+      {/* A listagem da API não envia imagens nem o nome da loja. */}
       <div
         aria-hidden="true"
-        className="relative mb-4 flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-[#f8f9fa]"
+        className="relative mb-4 flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-[#f8f9fa]"
       >
-        {produto.imageUrl ? (
-          <Image src={produto.imageUrl} alt="" fill className="object-contain p-2" />
-        ) : (
-          <span className="text-sm text-gray-300">Sem Imagem</span>
-        )}
+        <span className="text-sm text-gray-400">Sem imagem</span>
       </div>
 
       <div aria-hidden="true" className="mt-auto flex flex-col gap-1 px-1">
-        <span className="line-clamp-2 min-h-[20px] text-sm font-semibold leading-tight text-gray-800">
-          {produto.name || 'Nome do Produto'}
+        <span className="line-clamp-2 min-h-[20px] break-words text-sm font-semibold leading-tight text-gray-800">
+          {produto.name}
         </span>
+        <span className="text-xs text-gray-500">{categoriaNome}</span>
+        <span className="text-xs text-gray-500">Loja não informada</span>
 
-        <div className="mt-1 flex min-h-[20px] items-baseline gap-1">
-          <span className="text-sm font-bold text-black">R${precoFormatado}</span>
-          <span className="text-xs text-gray-400">/{produto.unit || '--'}</span>
-        </div>
+        <span className="mt-1 text-sm font-bold text-black">{precoFormatado}</span>
 
         <span
           className={`mt-1 text-[10px] font-bold uppercase tracking-wider ${
-            produto.available ? 'text-[#a4cc15]' : 'text-[#e04a6e]'
+            disponivel ? 'text-[#a4cc15]' : 'text-[#e04a6e]'
           }`}
         >
-          {produto.available ? 'Disponível' : 'Indisponível'}
+          {estoque}
         </span>
       </div>
     </button>
