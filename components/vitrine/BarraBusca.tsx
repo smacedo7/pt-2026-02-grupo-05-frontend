@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from 'react';
+import { useId, type RefObject } from 'react';
 
 type Props = {
   valor: string;
@@ -9,13 +9,16 @@ type Props = {
   aoLimpar: () => void;
   inputRef: RefObject<HTMLInputElement | null>;
   ariaLabel?: string;
+  /** Posição e espaçamento do formulário. */
   className?: string;
+  /** Explicação exibida abaixo do campo, como o alcance da busca. */
+  aviso?: string;
 };
 
 const BOTAO_BARRA =
   'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#6a38ff]/70 transition-colors hover:text-[#6a38ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff]';
 
-/** Barra de pesquisa controlada da página inicial e listagens. */
+/** Barra de pesquisa controlada de produtos e lojas. */
 export default function BarraBusca({
   valor,
   aoMudar,
@@ -23,8 +26,14 @@ export default function BarraBusca({
   aoLimpar,
   inputRef,
   ariaLabel = 'Buscar produtos',
-  className = 'mb-8 flex justify-end',
+  className = 'mb-8',
+  aviso,
 }: Props) {
+  // Ids únicos: a Home e a página de produtos podem estar no documento ao mesmo tempo.
+  const id = useId();
+  const idCampo = `${id}-campo`;
+  const idAviso = `${id}-aviso`;
+
   return (
     <form
       role="search"
@@ -33,21 +42,22 @@ export default function BarraBusca({
         e.preventDefault();
         aoEnviar();
       }}
-      className={className}
+      className={`flex flex-col items-end gap-2 ${className}`}
     >
       <div className="flex w-full max-w-[500px] items-center rounded-full border border-gray-100 bg-white py-1.5 pl-5 pr-2 shadow-sm focus-within:ring-2 focus-within:ring-[#6a38ff]">
-        <label htmlFor="busca" className="sr-only">
+        <label htmlFor={idCampo} className="sr-only">
           {ariaLabel}
         </label>
         <input
-          id="busca"
+          id={idCampo}
+          aria-describedby={aviso ? idAviso : undefined}
           ref={inputRef}
           value={valor}
           onChange={(e) => aoMudar(e.target.value)}
           type="text"
           placeholder="Procurar por..."
           autoComplete="off"
-          className="flex-1 bg-transparent text-sm text-[#6a38ff] outline-none placeholder:text-[#6a38ff]/60"
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#6a38ff] outline-none placeholder:text-[#6a38ff]/60"
         />
         {valor !== '' && (
           <button
@@ -89,6 +99,11 @@ export default function BarraBusca({
           </svg>
         </button>
       </div>
+      {aviso && (
+        <p id={idAviso} className="max-w-[500px] px-5 text-right text-xs text-gray-600">
+          {aviso}
+        </p>
+      )}
     </form>
   );
 }

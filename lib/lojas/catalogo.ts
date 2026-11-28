@@ -1,7 +1,7 @@
 import {
-  prepararCategoriasHome,
-  type CategoriaHome,
-} from "@/components/home/categorias";
+  prepararCategoriasVitrine,
+  type CategoriaVitrine,
+} from "@/components/vitrine/categorias";
 import {
   correspondeBuscaPorNome,
   normalizarTextoBusca,
@@ -46,7 +46,7 @@ const COMPARADORES: Record<OrdenacaoLojas, (a: Loja, b: Loja) => number> = {
 /** Converte categorias da API para o formato da faixa de categorias do cabeçalho. */
 export function prepararCategoriasRaizLojas(
   categorias: CategoriaResumo[],
-): CategoriaHome[] {
+): CategoriaVitrine[] {
   const raizes: CategoriaApi[] = categorias
     .filter((cat) => (cat.parentCategoryId ?? null) === null)
     .map((cat) => ({
@@ -56,7 +56,7 @@ export function prepararCategoriasRaizLojas(
       parentCategoryId: cat.parentCategoryId ?? null,
     }));
 
-  return prepararCategoriasHome(raizes);
+  return prepararCategoriasVitrine(raizes);
 }
 
 /** Coleta o ID da categoria selecionada e os IDs de todas as suas subcategorias. */

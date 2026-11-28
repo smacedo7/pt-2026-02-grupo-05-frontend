@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { EstadoListaCategorias } from "@/components/home/categorias";
+import type { EstadoListaCategorias } from "@/components/vitrine/categorias";
 
 type Props = {
   lista: EstadoListaCategorias;

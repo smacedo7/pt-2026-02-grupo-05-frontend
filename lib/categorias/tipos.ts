@@ -33,7 +33,6 @@ export type Produto = {
   criadoEm: string;
   avaliacao?: number;
   estoque?: number;
-  /** null: a tela não recebeu o nome da loja e mostra o aviso no lugar. */
-  lojaNome?: string | null;
+  lojaNome?: string;
   categoriaNome?: string;
 };

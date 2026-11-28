@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/navbar/Navbar";
-import BarraBusca from "@/components/home/BarraBusca";
-import type { EstadoListaCategorias } from "@/components/home/categorias";
+import BarraBusca from "@/components/vitrine/BarraBusca";
+import type { EstadoListaCategorias } from "@/components/vitrine/categorias";
 import FaixaCategoriasLojas from "@/components/lojas/FaixaCategoriasLojas";
 import CardLoja, { CardLojaSkeleton } from "@/components/lojas/CardLoja";
 import MenuFiltrosLojas from "@/components/lojas/MenuFiltrosLojas";
@@ -157,7 +157,7 @@ export default function LojasConteudo() {
             aoLimpar={limparBusca}
             inputRef={buscaRef}
             ariaLabel="Buscar lojas"
-            className="mb-5 flex justify-end"
+            className="mb-5"
           />
 
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

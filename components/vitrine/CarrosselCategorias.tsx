@@ -1,20 +1,27 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import BotaoTentarNovamente from './BotaoTentarNovamente';
 import type { EstadoListaCategorias } from './categorias';
 
 type Props = {
   lista: EstadoListaCategorias;
   aoTentarNovamente: () => void;
+  /** Para uso sobre fundo escuro. */
+  escuro?: boolean;
 };
 
 const BOTAO_CARROSSEL =
   'rounded-full border border-gray-100 bg-white p-2 text-[#6a38ff] shadow-sm select-none transition-all hover:bg-gray-100 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2';
 
-/** Carrossel horizontal de categorias da página inicial com controles de rolagem. */
-export default function CarrosselCategorias({ lista, aoTentarNovamente }: Props) {
+/** Carrossel horizontal de categorias com controles de rolagem. */
+export default function CarrosselCategorias({ lista, aoTentarNovamente, escuro = false }: Props) {
+  // Ids únicos: a Home e a página de produtos podem estar no documento ao mesmo tempo.
+  const id = useId();
+  const idTitulo = `${id}-titulo`;
+  const idLista = `${id}-lista`;
   const categoriasRef = useRef<HTMLDivElement>(null);
   const scrollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -41,9 +48,9 @@ export default function CarrosselCategorias({ lista, aoTentarNovamente }: Props)
   };
 
   return (
-    <section id="categorias" aria-labelledby="titulo-categorias">
+    <section aria-labelledby={idTitulo}>
       <div className="mb-6 flex items-center justify-between">
-        <h2 id="titulo-categorias" className="font-sans text-3xl text-black">
+        <h2 id={idTitulo} className={`font-sans text-3xl ${escuro ? 'text-creme' : 'text-black'}`}>
           Categoria
         </h2>
 
@@ -57,7 +64,7 @@ export default function CarrosselCategorias({ lista, aoTentarNovamente }: Props)
             onTouchStart={() => startScroll('esquerda')}
             onTouchEnd={stopScroll}
             aria-label="Ver categorias anteriores"
-            aria-controls="lista-categorias"
+            aria-controls={idLista}
             className={BOTAO_CARROSSEL}
           >
             <svg
@@ -84,7 +91,7 @@ export default function CarrosselCategorias({ lista, aoTentarNovamente }: Props)
             onTouchStart={() => startScroll('direita')}
             onTouchEnd={stopScroll}
             aria-label="Ver próximas categorias"
-            aria-controls="lista-categorias"
+            aria-controls={idLista}
             className={BOTAO_CARROSSEL}
           >
             <svg
@@ -106,7 +113,7 @@ export default function CarrosselCategorias({ lista, aoTentarNovamente }: Props)
       </div>
 
       <div
-        id="lista-categorias"
+        id={idLista}
         ref={categoriasRef}
         role="region"
         aria-label="Categorias de produtos"
@@ -130,21 +137,15 @@ export default function CarrosselCategorias({ lista, aoTentarNovamente }: Props)
 
         {lista.status === 'erro' && (
           <div className="flex w-full flex-col items-center gap-3 py-4 text-center">
-            <p role="alert" className="text-sm text-red-500">
+            <p role="alert" className={`text-sm ${escuro ? 'text-red-300' : 'text-red-500'}`}>
               {lista.mensagem}
             </p>
-            <button
-              type="button"
-              onClick={aoTentarNovamente}
-              className="cursor-pointer rounded-full bg-roxo px-5 py-2 text-sm font-bold text-white hover:bg-[#5c2de0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6a38ff] focus-visible:ring-offset-2"
-            >
-              Tentar novamente
-            </button>
+            <BotaoTentarNovamente aoClicar={aoTentarNovamente} />
           </div>
         )}
 
         {lista.status === 'ok' && lista.categorias.length === 0 && (
-          <p role="status" className="w-full py-4 text-center text-sm text-gray-500">
+          <p role="status" className={`w-full py-4 text-center text-sm ${escuro ? 'text-creme' : 'text-gray-500'}`}>
             Nenhuma categoria cadastrada.
           </p>
         )}

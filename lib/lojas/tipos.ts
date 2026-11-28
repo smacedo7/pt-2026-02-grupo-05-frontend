@@ -19,6 +19,23 @@ export type Loja = {
   category?: CategoriaResumo;
 };
 
+export type CriarLojaPayload = {
+  name: string;
+  categoryId: number;
+  description?: string | null;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  stickerUrl?: string | null;
+};
+
+export type ResultadoCriarLoja =
+  | { tipo: "sucesso"; loja: Loja }
+  | { tipo: "validacao"; mensagem: string; campos?: Partial<Record<keyof CriarLojaPayload, string>> }
+  | { tipo: "nao-autorizado" }
+  | { tipo: "conflito" }
+  | { tipo: "conexao" }
+  | { tipo: "erro"; mensagem: string };
+
 export type AtualizarLojaPayload = {
   name?: string;
   categoryId?: number;

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import { entrar, type ResultadoLogin } from "./entrar";
 
 const MENSAGENS_ERRO: Record<Exclude<ResultadoLogin["tipo"], "autenticado">, string> = {
@@ -16,8 +17,6 @@ const MENSAGENS_ERRO: Record<Exclude<ResultadoLogin["tipo"], "autenticado">, str
 export default function LoginPage() {
   const router = useRouter();
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [aviso, setAviso] = useState("");
-  const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
   // O estado chega depois do próximo clique; a ref bloqueia envios duplicados já.
   const envioEmAndamento = useRef(false);
@@ -33,13 +32,12 @@ export default function LoginPage() {
     const senha = String(dados.get("password") ?? "");
 
     if (!email || !senha) {
-      setErro("Informe seu e-mail e sua senha.");
+      toast.error("Informe seu e-mail e sua senha.");
       return;
     }
 
     envioEmAndamento.current = true;
     setEnviando(true);
-    setErro("");
 
     const resultado = await entrar(email, senha);
 
@@ -47,17 +45,18 @@ export default function LoginPage() {
       try {
         localStorage.setItem("accessToken", resultado.accessToken);
       } catch {
-        setErro("Não foi possível salvar sua sessão neste navegador.");
+        toast.error("Não foi possível salvar sua sessão neste navegador.");
         envioEmAndamento.current = false;
         setEnviando(false);
         return;
       }
+      toast.success("Login realizado com sucesso!");
       // Fica bloqueado até a navegação, para não reenviar o login.
       router.push("/");
       return;
     }
 
-    setErro(MENSAGENS_ERRO[resultado.tipo]);
+    toast.error(MENSAGENS_ERRO[resultado.tipo]);
     envioEmAndamento.current = false;
     setEnviando(false);
   }
@@ -166,7 +165,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setAviso(
+                  toast.info(
                     "A recuperação de senha ainda será conectada ao sistema.",
                   )
                 }
@@ -174,12 +173,6 @@ export default function LoginPage() {
               >
                 Esqueceu sua senha?
               </button>
-
-              {erro && (
-                <p role="alert" className="text-center text-sm text-red-400">
-                  {erro}
-                </p>
-              )}
 
               <button
                 type="submit"
@@ -189,14 +182,6 @@ export default function LoginPage() {
               >
                 {enviando ? "ENTRANDO..." : "ENTRAR"}
               </button>
-
-              <p
-                role="status"
-                aria-live="polite"
-                className="text-center text-sm"
-              >
-                {aviso}
-              </p>
             </form>
 
             <p className="mt-5 text-center text-sm">
