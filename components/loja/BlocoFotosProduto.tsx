@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import { parsearPreco } from "@/lib/produtos/preco";
 
 export const MAX_FOTOS_PRODUTO = 3;
 export const URL_PRODUTO_REGEX = /^https?:\/\/.+/i;
@@ -10,12 +11,6 @@ export type ImagemProdutoRascunho = {
   id?: number;
   imageUrl: string;
 };
-
-export function parsearPreco(texto: string): number {
-  const limpo = texto.replace(/[^\d.,]/g, "").replace(",", ".");
-  const parsed = Number(limpo);
-  return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : Number.NaN;
-}
 
 /** Valida uma nova URL de foto antes de adicioná-la ao rascunho. */
 export function validarNovaImagemProduto(
